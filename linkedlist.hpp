@@ -1,0 +1,353 @@
+// *****************************************************************************************************************************
+// linkedlist.hpp
+// Linked List Template Class
+// Double-Linked
+// Adapted from class written in 2007 at UMKC
+// Author(s): Cory Douthat
+// Copyright (c) 2017 Cory Douthat, All Rights Reserved.
+// *****************************************************************************************************************************
+
+#ifndef LINKED_LIST_HPP_
+#define LINKED_LIST_HPP_
+
+#include <cstdlib>
+
+template <typename T>
+class phLinkedList;
+
+template <typename T>
+class phListNode
+{
+private:
+	// DATA
+	T data;
+	phListNode<T> *next;
+	phListNode<T> *prev;
+	// CONSTRUCTOR
+	phListNode(const T &input) : data(input),next(0),prev(0) {}
+
+public:
+	// LINKED LIST FRIEND
+	friend class phLinkedList<T>;
+};
+
+template <typename T>
+class phLinkedList
+{
+private:
+	unsigned int count;
+	phListNode<T> *head;						// Pointer to head of list
+	phListNode<T> *tail;						// Pointer to tail of list
+	phListNode<T> *current;					// Pointer to current item of interest
+public:
+	// CONSTRUCTORS AND DESTRUCTOR
+	phLinkedList() : head(0),tail(0),current(0),count(0) {}	// Constructor: default
+	phLinkedList(const phLinkedList<T> &copy);					// Constructor: copy
+	~phLinkedList() {clear();}								// Destructor
+
+	// OPERATORS
+	const phLinkedList<T>& operator =(const phLinkedList<T> &b);				// Operator =
+	T& operator [](unsigned int i) { return getIndex(i); }					// Operator []
+
+	// CHECK FUNCTIONS
+	bool isEmpty()const { return head==NULL; }								// Empty check
+	unsigned int size()const { return count; }								// Size
+
+	// DATA CONTROL FUNCTIONS
+	T* insertHead(const T &item);											// Add an item at the head
+	T* insertTail(const T &item);											// Add an item at the tail
+	T* insertCurrent(const T &item);										// Add an item after the current node
+
+	void removeHead();														// Delete item at head and set head to next item
+	void removeTail();														// Delete item at tail
+	void removeCurrent();													// Delete item at current pointer
+	void remove(const phListNode<T> *node);									// Delete specified node
+
+	T& getHead() { return head->data; }										// Return reference to data at head
+	T& getCurrent() { return current->data; }								// Return reference to data at current
+	T& getTail() { return tail->data; }										// Return reference to data at tail
+	T& get(const phListNode<T> *node) { return node->data; }				// Return reference to data at specified node
+	T& getIndex(unsigned int index);										// Return reference to item at an index from head
+
+	void setHead(const T &d) { head->data = d; }							// Set data at head
+	void setCurrent(const T &d) { current->data = d; }						// Set data at current
+	void set(const phListNode<T> *node, const T &d) { node->data = d; }		// Set data at specified node
+	void setIndex(unsigned int index, const T &d);							// Set data at index from head
+
+	void clear();															// clear list
+
+	// POINTER FUNCTIONS
+	bool moveNext();														// Set current pointer to the next item
+	bool moveHead();														// Set current pointer to the head item
+	bool moveTail();					                                    // Set current pointer to the tail item
+	const phListNode<T>* getCurrentPointer()const { return current; }		// Get constant pointer to current node
+	const phListNode<T>* getTailPointer()const { return tail; }				// Get constant pointer to tail node
+};
+
+
+// CONSTRUCTORS
+template <typename T>
+phLinkedList<T>::phLinkedList(const phLinkedList<T> &copy) : head(0),tail(0),current(0),count(0)
+{
+	*this = copy;
+}
+
+
+// OPERATORS
+
+// Operator = (assignment)
+template <typename T>
+const phLinkedList<T>& phLinkedList<T>::operator =(const phLinkedList<T> &b)
+{
+	clear();
+
+	phListNode<T> *temp_node = b.head;
+	for (unsigned int i = 0; i < b.count; i++)
+	{
+		insertTail(temp_node->data);
+		temp_node = temp_node->next;
+	}
+	return *this;
+}
+
+// DATA CONTROL
+// Add an item at the head
+// Returns:	Pointer to new data that was added
+template <typename T>
+T* phLinkedList<T>::insertHead(const T &item)
+{
+	if (isEmpty())
+	{
+		head = tail = current = new phListNode<T>(item);
+	}
+	else
+	{
+		phListNode<T> *temp;
+		temp = new phListNode<T>(item);
+		temp->next = head;
+		head->prev = temp;
+		head = temp;
+	}
+	count++;
+	return &(head->data);
+}
+
+// Add an item at the tail
+// Returns:	Pointer to new data that was added
+template <typename T>
+T* phLinkedList<T>::insertTail(const T &item)
+{
+	if (isEmpty())
+	{
+		head = tail = current = new phListNode<T>(item);
+	}
+	else
+	{
+		phListNode<T> *temp;
+		temp = new phListNode<T>(item);
+		tail->next = temp;
+		temp->prev = tail;
+		tail = temp;
+	}
+	count++;
+	return &(tail->data);
+}
+
+// Add an item after the current node
+// Returns:	Pointer to new data that was added
+template <typename T>
+T* phLinkedList<T>::insertCurrent(const T &item)
+{
+	if (current == tail)
+		return insertTail(item);
+	else
+	{
+		phListNode<T> *temp;
+		temp = new phListNode<T>(item);
+		temp->next = current->next;
+		current->next->prev = temp;
+		temp->prev = current;
+		current->next = temp;
+		count++;
+		return &(temp->data);
+	}
+}
+
+// Delete item at head and set head to next item
+template <typename T>
+void phLinkedList<T>::removeHead()
+{
+	if (head == NULL)
+		return;
+
+	if (head == tail)
+	{
+		delete head;
+		head = tail = current = NULL;
+		count = 0;
+	}
+	else
+	{
+		if (current == head)
+			current = head->next;
+		phListNode<T> *temp = head->next;
+		delete head;
+		head = temp;
+		head->prev = NULL;
+		count--;
+	}
+}
+
+// Delete item at tail
+template <typename T>
+void phLinkedList<T>::removeTail()
+{
+	if (head == NULL)
+		return;
+
+	if (head == tail)
+	{
+		delete tail;
+		head = tail = current = NULL;
+		count = 0;
+	}
+	else
+	{
+		if (current == tail)
+			current = nullptr;
+		phListNode<T> *temp = tail->prev;
+		delete tail;
+		tail = temp;
+		tail->next = NULL;
+		count--;
+	}
+}
+
+// Delete item at current pointer
+template <typename T>
+void phLinkedList<T>::removeCurrent()
+{
+	if (head == NULL)
+		return;
+
+	remove(current);
+}
+
+// Delete specific node
+template <typename T>
+void phLinkedList<T>::remove(const phListNode<T> *node)
+{
+	if (head == NULL)
+		return;
+
+	if (node == head)
+		removeHead();
+	else if (node == tail)
+		removeTail();
+	else
+	{
+		if (current == node)
+			current = node->next;
+		node->prev->next = node->next;
+		node->next->prev = node->prev;
+		delete node;
+		count--;
+	}
+}
+
+// Return reference to item at an index from head
+template <typename T>
+T& phLinkedList<T>::getIndex(unsigned int index)
+{
+	if (index <= count / 2)
+	{
+		phListNode<T> *temp;
+		temp = head;
+		for (unsigned int i = 1; i <= index; i++)
+			temp = temp->next;
+		return temp->data;
+	}
+	else
+	{
+		phListNode<T> *temp;
+		temp = tail;
+		for (unsigned int i = count - 1; i > index; i--)
+			temp = temp->prev;
+		return temp->data;
+	}
+}
+
+// Set data at index from head
+template <typename T>
+void phLinkedList<T>::setIndex(unsigned int index,const T &d)
+{
+	if (index <= count / 2)
+	{
+		phListNode<T> *temp;
+		temp = head;
+		for (int i = 1; i <= index; i++)
+			temp = temp->next;
+		temp->data = d;
+	}
+	else
+	{
+		phListNode<T> *temp;
+		temp = tail;
+		for (int i = count - 1; i > index; i--)
+			temp = temp->prev;
+		temp->data = d;
+	}
+}
+
+// Clear list
+template <typename T>
+void phLinkedList<T>::clear()
+{
+	while (!isEmpty())
+		removeHead();
+}
+
+// POINTER FUNCTIONS
+// Set current pointer to the next item
+// Returns:	true if next is valid, false if at tail
+template <typename T>
+bool phLinkedList<T>::moveNext()
+{
+	if (current == tail)
+		return false;
+	else
+	{
+		current = current->next;
+		return true;
+	}
+}
+
+// Set current pointer to the first item
+// Returns:	true if head is valid, false if head is null
+template <typename T>
+bool phLinkedList<T>::moveHead()
+{
+	if (head == nullptr)
+		return false;
+	else
+	{
+		current = head;
+		return true;
+	}
+}
+
+// Set current pointer to the last item
+// Returns:	true if tail is valid, false if tail is null
+template <typename T>
+bool phLinkedList<T>::moveTail()
+{
+	if (tail == nullptr)
+		return false;
+	else
+	{
+		current = tail;
+		return true;
+	}
+}
+
+#endif

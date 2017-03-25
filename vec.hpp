@@ -4,8 +4,7 @@
 // 2D And 3D vector classes
 // Template definition for data type
 // Author(s): Cory Douthat
-// Contributor(s): Connor Douthat
-// Copyright (c) 2015 Cory Douthat and Connor Douthat, All Rights Reserved.
+// Copyright (c) 2015 Cory Douthat, All Rights Reserved.
 // *****************************************************************************************************************************
 
 #ifndef VEC_HPP_
@@ -53,12 +52,14 @@ public:
 	// Other Member Functions
 	T len()const { return sqrt(x*x + y*y); }								// Length
 	T lenSq()const { return x*x + y*y; }									// Length squared
-	Vec2<T> norm()const { return *this / len(); }							// Get normalized vector
-	const Vec2<T>& normalize() { return *this /= len(); }					// Normalize vector
-	T angle(const Vec2<T> &b)const { return (*this*b) / (len() + b.len()); }// Angle between vectors
+	Vec2<T> norm()const { return lenSq() != 0 ? *this / len() : *this; }	// Get normalized vector
+	const Vec2<T>& normalize() { return lenSq() != 0 ? *this /= len() : *this; }	// Normalize vector
+	T angle()const { return atan2(y,x); }									// Angle of vector (from zero)
+	T angle(const Vec2<T> &b)const { return acos((*this*b) / (len() + b.len())); }// Angle between vectors
 	bool similar(const Vec2<T> &b,T margin = 0.01)const;					// Check if vectors are similar
+	const T* getData()const { return (const T*)(&v); }						// Get pointer to raw data
 	// Static Member Functions
-	static T angle(const Vec2<T> &a, const Vec2<T> &b) { return a.Angle(b); }	// Angle between vectors (static)
+	static T angle(const Vec2<T> &a, const Vec2<T> &b) { return a.angle(b); }	// Angle between vectors (static)
 	static T dot(const Vec2<T> &a, const Vec2<T> &b) { return a * b; }			// Dot Product (static)
 };
 
@@ -103,31 +104,86 @@ public:
 	// Other Member Functions
 	T len()const { return sqrt(x*x + y*y + z*z); }							// Length
 	T lenSq()const { return x*x + y*y + z*z; }								// Length squared
-	Vec3<T> norm()const { return *this / len(); }							// Get normalized vector
-	const Vec3<T>& normalize() { return *this /= len(); }					// Normalize vector
+	Vec3<T> norm()const { return lenSq() != 0 ? *this / len() : *this; }	// Get normalized vector
+	const Vec3<T>& normalize() { return lenSq() != 0 ? *this /= len() : *this; }// Normalize vector
 	T angle(const Vec3<T> &b)const { return (*this*b) / (len() + b.len()); }// Angle between vectors
 	bool similar(const Vec3<T> &b,T margin = 0.01)const;					// Check if vectors are similar
-	Vec2<T> xy(){ return Vec2<T>(x, y); }										// Get XY components
+	Vec2<T> xy(){ return Vec2<T>(x, y); }									// Get XY components
+	const T* getData()const { return (const T*)(&v); }						// Get pointer to raw data
 	// Static Member Functions
-	static T angle(const Vec3<T> &a, const Vec3<T> &b) { return a.Angle(b); }	// Angle between vectors (static)
+	static T angle(const Vec3<T> &a, const Vec3<T> &b) { return a.angle(b); }	// Angle between vectors (static)
 	static T cross(const Vec3<T> &a, const Vec3<T> &b) { return a % b; }		// Cross Product (static)
 	static T dot(const Vec3<T> &a, const Vec3<T> &b) { return a * b; }			// Dot Product (static)
+};
+
+template <typename T = float>
+class Vec4
+{
+public:
+    // DATA
+    union
+    {
+        struct { T x; T y; T z; T w;};
+        T v[4];
+    };
+
+    // FUNCTIONS
+    // Constructors
+    Vec4() : x(0),y(0),z(0),w(0) {}											// Constructor: initialize all to zeros
+    Vec4(const T &bx,const T &by,const T &bz, const T &bw) : x(bx),y(by),z(bz),w(bw) {}	    // Constructor: x, y, z, w
+    Vec4(const Vec4<T> &b) { memcpy(this,&b,sizeof(*this)); }				// Constructor: copy
+    Vec4(const Vec3<T> &b,const T& s = 0);									// Constructor: 3D vector
+    // Basic Operators
+    const Vec4<T>& operator =(const Vec4<T> &b);							// Operator =
+    T& operator [](unsigned int i) { return v[i]; }							// Operator []
+    const T& operator [](unsigned int i)const { return v[i]; }				// Operator [] const
+    bool operator ==(const Vec4<T> &b)const;								// Operator ==
+    bool operator !=(const Vec4<T> &b)const { return !(*this == b); }		// Operator !=
+    // Vector Operators
+    Vec4<T> operator +(const Vec4<T> &b)const;								// Operator +
+    Vec4<T> operator -(const Vec4<T> &b)const;								// Operator -
+    Vec4<T> operator -()const;												// Operator - (inverse)
+    T operator *(const Vec4<T> &b)const;									// Dot Product Operator *
+    const Vec4<T>& operator +=(const Vec4<T> &b) { return *this = *this + b; }	// Operator +=
+    const Vec4<T>& operator -=(const Vec4<T> &b) { return *this = *this - b; }	// Operator -=
+    // Scalar Operators
+    Vec4<T> operator *(T s)const;											// Operator * (scalar)
+    template <typename sT> friend Vec4<sT> operator *(sT a,const Vec4<sT> &b);	// Operator * (scalar)
+    Vec4<T> operator /(T s)const;											// Operator / (scalar)
+    const Vec4<T>& operator *=(T s)const { return *this = *this * s; }		// Operator *= (scalar)
+    const Vec4<T>& operator /=(T s)const { return *this = *this / s; }		// Operator /= (scalar)
+    // Other Member Functions
+    T len()const { return sqrt(x*x + y*y + z*z + w*w); }					// Length
+    T lenSq()const { return x*x + y*y + z*z + w*w; }						// Length squared
+    Vec4<T> norm()const { return lenSq() != 0 ? *this / len() : *this; }	// Get normalized vector
+    const Vec4<T>& normalize() { return lenSq() != 0 ? *this /= len() : *this; }	// Normalize vector
+    bool similar(const Vec4<T> &b,T margin = 0.01)const;					// Check if vectors are similar
+    Vec3<T> xyz(){ return Vec3<T>(x,y,z); }									// Get XYZ components
+    const T* getData()const { return (const T*)(&v); }						// Get pointer to raw data
+    // Static Member Functions
+    static T dot(const Vec4<T> &a,const Vec4<T> &b) { return a * b; }		// Dot Product (static)
 };
 
 // Shortcut Types
 typedef Vec2<float> Vec2f;
 typedef Vec3<float> Vec3f;
+typedef Vec4<float> Vec4f;
 typedef Vec2<double> Vec2d;
 typedef Vec3<double> Vec3d;
+typedef Vec4<double> Vec4d;
 typedef Vec2<int> Vec2i;
 typedef Vec3<int> Vec3i;
+typedef Vec4<int> Vec4i;
 typedef Vec2<short> Vec2s;
 typedef Vec3<short> Vec3s;
+typedef Vec4<short> Vec4s;
+
+
 
 // CONSTRUCTORS
 // *****************************************************************************************************************************
 
-// Vec2
+// Vec3
 // Constructor: copy one size smaller vector plus one element
 // Inputs	b = input vector
 //			s = last element
@@ -136,6 +192,17 @@ Vec3<T>::Vec3(const Vec2<T> &b, const T &s)
 {
 	memcpy(&v,&(b.v),2 * sizeof(T));
 	v[2] = s;
+}
+
+// Vec4
+// Constructor: copy one size smaller vector plus one element
+// Inputs	b = input vector
+//			s = last element
+template <typename T>
+Vec4<T>::Vec4(const Vec3<T> &b,const T& s = 0)
+{
+    memcpy(&v,&(b.v),3 * sizeof(T));
+    v[3] = s;
 }
 
 
@@ -158,6 +225,14 @@ const Vec3<T>& Vec3<T>::operator =(const Vec3<T> &b)
 	x = b.x;	y = b.y;	z = b.z;
 	return *this;
 }
+// Vec4
+// Operator =
+template <typename T>
+const Vec4<T>& Vec4<T>::operator =(const Vec4<T> &b)
+{
+    x = b.x;	y = b.y;	z = b.z;    w = b.w;
+    return *this;
+}
 
 // Vec2
 // Operator ==
@@ -166,14 +241,20 @@ bool Vec2<T>::operator ==(const Vec2<T> &b)const
 {
 	return memcmp(this,&b,sizeof(*this)) == 0;
 }
-// Vec2
+// Vec3
 // Operator ==
 template <typename T>
 bool Vec3<T>::operator ==(const Vec3<T> &b)const
 {
 	return memcmp(this,&b,sizeof(*this)) == 0;
 }
-
+// Vec4
+// Operator ==
+template <typename T>
+bool Vec4<T>::operator ==(const Vec4<T> &b)const
+{
+    return memcmp(this,&b,sizeof(*this)) == 0;
+}
 
 // VECTOR OPERATORS
 // *****************************************************************************************************************************
@@ -192,6 +273,13 @@ Vec3<T> Vec3<T>::operator +(const Vec3<T> &b)const
 {
 	return Vec3<T>(x + b.x, y + b.y, z + b.z);
 }
+// Vec4
+// Operator +
+template <typename T>
+Vec4<T> Vec4<T>::operator +(const Vec4<T> &b)const
+{
+    return Vec4<T>(x + b.x,y + b.y,z + b.z,w + b.w);
+}
 
 // Vec2
 // Operator -
@@ -207,6 +295,13 @@ Vec3<T> Vec3<T>::operator -(const Vec3<T> &b)const
 {
 	return Vec3<T>(x - b.x, y - b.y, z - b.z);
 }
+// Vec4
+// Operator -
+template <typename T>
+Vec4<T> Vec4<T>::operator -(const Vec4<T> &b)const
+{
+    return Vec4<T>(x - b.x,y - b.y,z - b.z,w - b.w);
+}
 
 // Vec2
 // Operator - (inverse)
@@ -221,6 +316,13 @@ template <typename T>
 Vec3<T> Vec3<T>::operator -()const
 {
 	return Vec3<T>(-x, -y, -z);
+}
+// Vec4
+// Operator - (inverse)
+template <typename T>
+Vec4<T> Vec4<T>::operator -()const
+{
+    return Vec4<T>(-x,-y,-z,-w);
 }
 
 // Vec3 (only)
@@ -241,13 +343,19 @@ T Vec2<T>::operator *(const Vec2<T> &b)const
 {
 	return x * b.x + y * b.y;
 }
-
 // Vec3
 // Dot Product Operator *
 template <typename T>
 T Vec3<T>::operator *(const Vec3<T> &b)const
 {
 	return x * b.x + y * b.y + z * b.z;
+}
+// Vec4
+// Dot Product Operator *
+template <typename T>
+T Vec4<T>::operator *(const Vec4<T> &b)const
+{
+    return x * b.x + y * b.y + z * b.z + w * b.w;
 }
 
 
@@ -261,6 +369,20 @@ Vec2<T> Vec2<T>::operator *(T s)const
 {
 	return Vec2<T>(x * s, y * s);
 }
+// Vec3
+// Operator * (scalar)
+template <typename T>
+Vec3<T> Vec3<T>::operator *(T s)const
+{
+    return Vec3<T>(x * s,y * s,z * s);
+}
+// Vec4
+// Operator * (scalar)
+template <typename T>
+Vec4<T> Vec4<T>::operator *(T s)const
+{
+    return Vec4<T>(x * s,y * s,z * s,w * s);
+}
 
 // Vec2 - Non-Member Friend Operator
 // Operator * (scalar * Vec2)
@@ -269,15 +391,6 @@ Vec2<T> operator *(T s,const Vec2<T> &b)
 {
 	return Vec2<T>(b.x * s,b.y * s);
 }
-
-// Vec3
-// Operator * (scalar)
-template <typename T>
-Vec3<T> Vec3<T>::operator *(T s)const
-{
-	return Vec3<T>(x * s, y * s, z * s);
-}
-
 // Vec3 - Non-Member Friend Operator
 // Operator * (scalar * Vec3)
 template <typename T>
@@ -285,6 +398,14 @@ Vec3<T> operator *(T s,const Vec3<T> &b)
 {
 	return Vec3<T>(b.x * s,b.y * s, b.z * s);
 }
+// Vec4 - Non-Member Friend Operator
+// Operator * (scalar * Vec4)
+template <typename T>
+Vec4<T> operator *(T s,const Vec4<T> &b)
+{
+    return Vec4<T>(b.x * s,b.y * s,b.z * s,w * s);
+}
+
 
 // Vec2
 // Operator / (scalar)
@@ -293,13 +414,19 @@ Vec2<T> Vec2<T>::operator /(T s)const
 {
 	return Vec2<T>(x / s, y / s);
 }
-
 // Vec3
 // Operator / (scalar)
 template <typename T>
 Vec3<T> Vec3<T>::operator /(T s)const
 {
 	return Vec3<T>(x / s, y / s, z / s);
+}
+// Vec4
+// Operator / (scalar)
+template <typename T>
+Vec4<T> Vec4<T>::operator /(T s)const
+{
+    return Vec4<T>(x / s,y / s,z / s,w / s);
 }
 
 
@@ -313,13 +440,19 @@ bool Vec2<T>::similar(const Vec2<T> &b ,T margin)const
 {
 	return ((x - b.x <= margin) && (y - b.y <= margin));
 }
-
 // Vec3
 // Check if vectors are within a certain margin of being equal
 template <typename T>
 bool Vec3<T>::similar(const Vec3<T> &b,T margin)const
 {
 	return ((x - b.x <= margin) && (y - b.y <= margin) && (z - b.z <= margin));
+}
+// Vec4
+// Check if vectors are within a certain margin of being equal
+template <typename T>
+bool Vec4<T>::similar(const Vec4<T> &b,T margin = 0.01)const
+{
+    return ((x - b.x <= margin) && (y - b.y <= margin) && (z - b.z <= margin) && (w - b.w <= margin));
 }
 
 #endif
