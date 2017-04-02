@@ -5,7 +5,7 @@
 // The matrix data is stored in column-major format. [j] returns column j,
 // and [j][i] returns the item at column j, row i.
 // Author(s): Cory Douthat
-// Copyright (c) 2015 Cory Douthat, All Rights Reserved.
+// Copyright (c) 2017 Cory Douthat, All Rights Reserved.
 // *****************************************************************************************************************************
 
 #ifndef MAT_HPP_
@@ -151,7 +151,7 @@ public:
     Mat4();												// Constructor: identity matrix
     Mat4(const Mat4<T> &b);								// Constructor: copy
     explicit Mat4(T s);									// Constructor: all elements to s
-    Mat4(const Mat3<T> &b,T last_element = 1);			// Constructor: from 2x2 matrix, last element usually 1
+    Mat4(const Mat3<T> &b,T last_element = 1);			// Constructor: from 3x3 matrix, last element usually 1
     Mat4(const T *data_in);								// Constructor: data array
     // Basic Operators
     const Mat4<T>& operator =(const Mat4<T> &b);		// Operator = (assignment)
@@ -1040,7 +1040,7 @@ Mat4<T> Mat4<T>::projOrtho(T left,T right,T bottom,T top,T d_near,T d_far)
 // Similar to gluPerspective()
 // Inverts z axis in order to align coordinates with OpenGL depth buffer
 // Produces "clip coordinates" for OpenGL to convert to "viewport coordinates"
-// Inputs:  fov_y = vertical field of view angle
+// Inputs:  fov_y = vertical field of view angle (radians)
 //          aspect = aspect ratio (width / height)
 //          d_near = near clipping plane
 //          d_far = far clipping plane

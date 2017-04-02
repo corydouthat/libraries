@@ -2,7 +2,7 @@
 // MatmMisc.hpp
 // Acid Physics Miscellaneous Math Functions
 // Author(s): Cory Douthat
-// Copyright (c) 2015 Cory Douthat, All Rights Reserved.
+// Copyright (c) 2017 Cory Douthat, All Rights Reserved.
 // *****************************************************************************************************************************
 
 #ifndef MATH_MISC_HPP_

@@ -2,7 +2,7 @@
 // user_input.hpp
 // User Input Functions using GLFW
 // Author: Cory Douthat
-// Copyright (c) 2015 Cory Douthat, All Rights Reserved.
+// Copyright (c) 2017 Cory Douthat, All Rights Reserved.
 // *****************************************************************************************************************************
 
 #ifndef USER_INPUT_HPP_
