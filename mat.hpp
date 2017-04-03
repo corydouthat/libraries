@@ -1272,13 +1272,15 @@ Mat3<T> Mat3<T>::rot(const T &theta,const Vec3<T> &axis)
 {
 	Mat3<T> temp;	// Identity matrix
 
+	Vec3<T> axis_norm = axis.norm(); // Normalize axis
+
 	if (!theta || (!(axis.x) && !(axis.y) && !(axis.z))) 
 		return temp;
 	else
 	{
-		T x = axis.x;
-		T y = axis.y;
-		T z = axis.z;
+		T x = axis_norm.x;
+		T y = axis_norm.y;
+		T z = axis_norm.z;
 		T c = cos(theta);
 		T s = sin(theta);
 		T t = 1 - cos(theta);
