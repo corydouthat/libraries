@@ -133,6 +133,10 @@ public:
 	static Mat3<T> transf(const Mat2<T> &r,const Vec2<T> &t);		// 2D transform matrix from 2D mat + 2D vector
 #endif
 
+#ifdef QUAT_HPP_
+	static Mat3<T> rot(const Quat<T> q);				// 3D rot matrix around axis (magnitude as radians)
+#endif
+
 	// Friend declarations
 	template <class T2>
 	friend class Mat2;
@@ -198,6 +202,11 @@ public:
     // 3D Transformation Matrix Generators
     static Mat4<T> transf(const Mat3<T> &r,const Vec4<T> &t);		// 3D transform matrix from 3D mat + 4D vector
     static Mat4<T> transf(const Mat3<T> &r,const Vec3<T> &t);		// 3D transform matrix from 3D mat + 3D vector
+#endif
+
+#ifdef QUAT_HPP_
+	static Mat4<T> transf(const Quat<T> &q, const Vec4<T> &t);		// 3D transform matrix from 3D mat + 4D vector
+	static Mat4<T> transf(const Quat<T> &q, const Vec3<T> &t);		// 3D transform matrix from 3D mat + 3D vector
 #endif
 
     // Friend declarations
@@ -1343,6 +1352,47 @@ Mat4<T> Mat4<T>::transf(const Mat3<T> &r,const Vec3<T> &t)
     temp.v[13] = t.y;
     temp.v[14] = t.z;
     return temp;
+}
+
+#endif
+
+
+// QUATERNION RELATED FUNCTIONS
+// **************************************************************************
+#ifdef QUAT_HPP_
+// Mat3
+// 3D rot matrix around axis (magnitude as radians)
+template <typename T>
+Mat3<T> Mat3<T>::rot(const Quat<T> q)
+{
+	Mat3<T> temp;
+	temp.v[0] = q.a*q.a + q.b*q.b - q.c*q.c - q.d*q.d;	// Col 1, Row 1
+	temp.v[3] = 2 * q.b*q.c - 2 * q.a*q.d;				// Col 2, Row 1
+	temp.v[6] = 2 * q.b*q.d + 2 * q.a*q.c;				// Col 3, Row 1
+	temp.v[1] = 2 * q.b*q.c + 2 * q.a*q.d;				// Col 1, Row 2
+	temp.v[4] = q.a*q.a - q.b*q.b + q.c*q.c - q.d*q.d;	// Col 2, Row 2
+	temp.v[7] = 2 * q.c*q.d - 2 * q.a*q.b;				// Col 3, Row 2
+	temp.v[2] = 2 * q.b*q.d - 2 * q.a*q.c;				// Col 1, Row 3
+	temp.v[5] = 2 * q.c*q.d + 2 * q.a*q.b;				// Col 2, Row 3
+	temp.v[8] = q.a*q.a - q.b*q.b - q.c*q.c + q.d*q.d;	// Col 3, Row 3
+
+	return temp;
+}
+
+// Mat4
+// 3D transform matrix from 3D mat + 4D vector
+template <typename T>
+Mat4<T> Mat4<T>::transf(const Quat<T> &q, const Vec4<T> &t)
+{
+	return Mat4<T>::transf(Mat3<T>::rot(q), t);
+}
+
+// Mat4
+// 3D transform matrix from 3D mat + 3D vector
+template <typename T>
+Mat4<T> Mat4<T>::transf(const Quat<T> &q, const Vec3<T> &t)
+{
+	return Mat4<T>::transf(Mat3<T>::rot(q), t);
 }
 
 #endif

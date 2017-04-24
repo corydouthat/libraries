@@ -99,8 +99,8 @@ public:
 	Vec3<T> operator *(T s)const;											// Operator * (scalar)
 	template <typename sT> friend Vec3<sT> operator *(sT a, const Vec3<sT> &b);	// Operator * (scalar)
 	Vec3<T> operator /(T s)const;											// Operator / (scalar)
-	const Vec3<T>& operator *=(T s)const { return *this = *this * s; }		// Operator *= (scalar)
-	const Vec3<T>& operator /=(T s)const { return *this = *this / s; }		// Operator /= (scalar)
+	const Vec3<T>& operator *=(T s) { return *this = *this * s; }			// Operator *= (scalar)
+	const Vec3<T>& operator /=(T s) { return *this = *this / s; }			// Operator /= (scalar)
 	// Other Member Functions
 	T len()const { return sqrt(x*x + y*y + z*z); }							// Length
 	T lenSq()const { return x*x + y*y + z*z; }								// Length squared
@@ -150,8 +150,8 @@ public:
     Vec4<T> operator *(T s)const;											// Operator * (scalar)
     template <typename sT> friend Vec4<sT> operator *(sT a,const Vec4<sT> &b);	// Operator * (scalar)
     Vec4<T> operator /(T s)const;											// Operator / (scalar)
-    const Vec4<T>& operator *=(T s)const { return *this = *this * s; }		// Operator *= (scalar)
-    const Vec4<T>& operator /=(T s)const { return *this = *this / s; }		// Operator /= (scalar)
+    const Vec4<T>& operator *=(T s) { return *this = *this * s; }			// Operator *= (scalar)
+    const Vec4<T>& operator /=(T s) { return *this = *this / s; }			// Operator /= (scalar)
     // Other Member Functions
     T len()const { return sqrt(x*x + y*y + z*z + w*w); }					// Length
     T lenSq()const { return x*x + y*y + z*z + w*w; }						// Length squared
