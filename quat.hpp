@@ -99,14 +99,19 @@ Quat<T>::Quat(const T angle, Vec3<T> &axis)
 	{
 		Vec3<T> r = axis.norm();
 		T temp = sin(angle / 2);
-		
+
 		a = cos(angle / 2);
 		b = temp * r.x;
 		c = temp * r.y;
 		d = temp * r.z;
 	}
 	else
-		Quat();
+	{
+		a = 1; 
+		b = 0; 
+		c = 0; 
+		d = 0;
+	}
 }
 
 #endif
@@ -249,6 +254,8 @@ Vec3<T> Quat<T>::rotate(const Vec3<T> &p)const
 { 
 	// TODO: Check if multiplier is a unit quaternion
 	// TODO: Optimize?
+	// TODO: Instead use formula from Wikipedia under "Used Methods": vnew = v + 2r x (r x v + wv)
+	// https://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation
 	Quat<T> pq = Quat<T>(0, p.x, p.y, p.z);
 	Quat<T> temp = rotate(pq);
 	return Vec3<T>(temp.b, temp.c, temp.d);
@@ -264,19 +271,19 @@ Vec3<T> Quat<T>::toEuler()const
 	T csqr = c * c;
 
 	// roll (x-axis rotation)
-	T t0 = +2 * (a * b + c * d);
-	T t1 = +1 - 2 * (b * b + csqr);
+	T t0 = T(2.0) * (a * b + c * d);
+	T t1 = T(1.0) - T(2.0) * (b * b + csqr);
 	temp.x = std::atan2(t0, t1);
 
 	// pitch (y-axis rotation)
-	T t2 = +2 * (a * c - d * b);
-	t2 = t2 > 1 ? 1 : t2;
-	t2 = t2 < -1 ? -1 : t2;
+	T t2 = T(2.0) * (a * c - d * b);
+	t2 = t2 > T(1.0) ? T(1.0) : t2;
+	t2 = t2 < T(-1.0) ? T(-1.0) : t2;
 	temp.y = std::asin(t2);
 
 	// yaw (z-axis rotation)
-	T t3 = +2 * (a * d + b * c);
-	T t4 = +1 - 2 * (csqr + d * d);
+	T t3 = T(2.0) * (a * d + b * c);
+	T t4 = T(1.0) - T(2.0) * (csqr + d * d);
 	temp.z = std::atan2(t3, t4);
 
 	return temp;

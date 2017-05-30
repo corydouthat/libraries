@@ -112,6 +112,8 @@ public:
 	static Mat3<T> zero();								// Generate zero matrix
 	static Mat3<T> ident();								// Generate identity matrix
 	static Mat3<T> transf(T theta, T x, T y);			// Generate 2D transformation matrix with rotation and translation
+	// Static Functions (other)
+	static Mat3<T> chgBasis(Mat3<T> t, Mat3<T> b);		// Change basis of transformation matrix
 
 	// Functions relating to vectors (Vec3)
 #ifdef VEC_HPP_
@@ -175,7 +177,7 @@ public:
     // Other Member Functions
     T det()const;										// Determinant
     Mat4<T> transp()const;								// Transpose
-    //Mat4<T> inv()const;									// Inverse
+    Mat4<T> inv()const;									// Inverse
     T get(unsigned int col,unsigned int row)const;		// Get element
     void set(unsigned int col,unsigned int row,T s);	// Set element
     const T* getData()const;							// Get pointer to raw data
@@ -186,6 +188,8 @@ public:
     // Static Projection Matrix Generators
     static Mat4<T> projOrtho(T left, T right, T bottom, T top, T d_near, T d_far);
     static Mat4<T> projPerspective(T fov_y,T aspect,T d_near,T d_far);
+	// Static Functions (other)
+	static Mat4<T> chgBasis(Mat4<T> t, Mat4<T> b);		// Change basis of transformation matrix
 
     // Functions relating to vectors (Vec4/Vec3)
 #ifdef VEC_HPP_
@@ -815,17 +819,20 @@ template <typename T>
 Mat2<T> Mat2<T>::inv()const
 {
 	Mat2<T> temp((T)0);
-	// Check if matrix is inversible by checking that determinant != 0
+	// Check if matrix is invertible by checking that determinant != 0
+	// TODO: Check if determinant is close to zero
 	if (T d = det())
 	{
-		// Matrix is inversible
+		// Matrix is invertible
 		temp.v[0] = (*this).v[3] / d;
 		temp.v[1] = -(*this).v[1] / d;
 		temp.v[2] = -(*this).v[2] / d;
 		temp.v[3] = (*this).v[0] / d;
 	}
 
-	// If matrix is not inversible - return zero matrix to make detection of this issue more easily
+	// Return result OR...
+	// If matrix is not invertible - return zero matrix to make detection of this issue easier
+	// TOTO: ^ this might not be the best idea...
 	return temp;
 }
 // Mat3
@@ -834,10 +841,11 @@ template <typename T>
 Mat3<T> Mat3<T>::inv()const
 {
 	Mat3<T> temp((T)0);
-	// Check if matrix is inversible by checking that determinant != 0
+	// Check if matrix is invertible by checking that determinant != 0
+	// TODO: Check if determinant is close to zero
 	if (T d = det())
 	{
-		// Matrix is inversible
+		// Matrix is invertible
 		temp.v[0] = ((*this).v[4] * (*this).v[8] - (*this).v[7] * (*this).v[5]) / d;
 		temp.v[1] = -((*this).v[1] * (*this).v[8] - (*this).v[7] * (*this).v[2]) / d;
 		temp.v[2] = ((*this).v[1] * (*this).v[5] - (*this).v[4] * (*this).v[2]) / d;
@@ -849,7 +857,64 @@ Mat3<T> Mat3<T>::inv()const
 		temp.v[8] = ((*this).v[0] * (*this).v[4] - (*this).v[3] * (*this).v[1]) / d;
 	}
 
-	// If matrix is not inversible - return zero matrix to make detection of this issue more easily
+	// Return result OR...
+	// If matrix is not invertible - return zero matrix to make detection of this issue easier
+	// TOTO: ^ this might not be the best idea...
+	return temp;
+}
+// Mat4
+// Inverse
+// Based roughly on Ian Millinton's book, "Game Physics Engine Development"
+template <typename T>
+Mat4<T> Mat4<T>::inv()const
+{
+	Mat4<T> temp((T)0);
+	// Check if matrix is invertible by checking that determinant != 0
+	// TODO: Check if determinant is close to zero
+	if (T d = det())
+	{
+		// TODO: Generalize - this implementation assumes a transformation matrix and fourth row = 0,0,0,1
+		if (v[3] == 0 && v[7] == 0 && v[11] == 0 && v[15] == 1)
+		{
+			temp.v[0] = (-v[6] * v[9] + v[5] * v[10]) / d;
+			temp.v[1] = (v[2] * v[9] - v[1] * v[10]) / d;
+			temp.v[2] = (-v[2] * v[5] + v[1] * v[6]) / d;
+
+			temp.v[4] = (v[6] * v[8] - v[4] * v[10]) / d;
+			temp.v[5] = (-v[2] * v[8] + v[0] * v[10]) / d;
+			temp.v[6] = (v[2] * v[4] - v[0] * v[6]) / d;
+
+			temp.v[8] = (-v[5] * v[8] + v[4] * v[9]) / d;
+			temp.v[9] = (+v[1] * v[8] - v[0] * v[9]) / d;
+			temp.v[10] = (-v[1] * v[4] + v[0] * v[5]) / d;
+
+			temp.v[12] = (v[6] * v[9] * v[12]
+				- v[5] * v[10] * v[12]
+				- v[6] * v[8] * v[13]
+				+ v[4] * v[10] * v[13]
+				+ v[5] * v[8] * v[14]
+				- v[4] * v[9] * v[14]) / d;
+			temp.v[13] = (-v[2] * v[9] * v[12]
+				+ v[1] * v[10] * v[12]
+				+ v[2] * v[8] * v[13]
+				- v[0] * v[10] * v[13]
+				- v[1] * v[8] * v[14]
+				+ v[0] * v[9] * v[14]) / d;
+			temp.v[14] = (v[2] * v[5] * v[12]
+				- v[1] * v[6] * v[12]
+				- v[2] * v[4] * v[13]
+				+ v[0] * v[6] * v[13]
+				+ v[1] * v[4] * v[14]
+				- v[0] * v[5] * v[14]) / d;
+
+			temp.v[3] = temp.v[7] = temp.v[11] = 0;
+			temp.v[15] = 1;
+		}
+	}
+
+	// Return result OR...
+	// If matrix is not invertible - return zero matrix to make detection of this issue easier
+	// TOTO: ^ this might not be the best idea...
 	return temp;
 }
 
@@ -1066,6 +1131,30 @@ Mat4<T> Mat4<T>::projPerspective(T fov_y, T aspect, T d_near,T d_far)
     temp.v[14] = (2 * d_far * d_near) / (d_near - d_far);
 
     return temp;
+}
+
+// Mat3
+// Change basis of transformation matrix
+// Inputs:	t = transformation matrix
+//			b = basis transformation matrix
+// Returns:	transformation matrix with new basis
+template <typename T>
+Mat3<T> Mat3<T>::chgBasis(Mat3<T> t, Mat3<T> b)
+{
+	// TODO: Check that matrix is invertible or that matrix inverse succeeded
+	return b * t * b.inv();
+}
+
+// Mat4
+// Change basis of transformation matrix
+// Inputs:	t = transformation matrix
+//			b = basis transformation matrix
+// Returns:	transformation matrix with new basis
+template <typename T>
+Mat4<T> Mat4<T>::chgBasis(Mat4<T> t, Mat4<T> b)
+{
+	// TODO: Check that matrix is invertible or that matrix inverse succeeded
+	return b * t * b.inv();
 }
 
 
