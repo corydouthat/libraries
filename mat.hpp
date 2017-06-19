@@ -113,7 +113,7 @@ public:
 	static Mat3<T> ident();								// Generate identity matrix
 	static Mat3<T> transf(T theta, T x, T y);			// Generate 2D transformation matrix with rotation and translation
 	// Static Functions (other)
-	static Mat3<T> chgBasis(Mat3<T> t, Mat3<T> b);		// Change basis of transformation matrix
+	static Mat3<T> chgBasis(Mat3<T> m, Mat3<T> b);		// Change basis of a matrix
 
 	// Functions relating to vectors (Vec3)
 #ifdef VEC_HPP_
@@ -189,7 +189,7 @@ public:
     static Mat4<T> projOrtho(T left, T right, T bottom, T top, T d_near, T d_far);
     static Mat4<T> projPerspective(T fov_y,T aspect,T d_near,T d_far);
 	// Static Functions (other)
-	static Mat4<T> chgBasis(Mat4<T> t, Mat4<T> b);		// Change basis of transformation matrix
+	static Mat4<T> chgBasis(Mat4<T> m, Mat4<T> b);		// Change basis of a matrix
 
     // Functions relating to vectors (Vec4/Vec3)
 #ifdef VEC_HPP_
@@ -1134,27 +1134,27 @@ Mat4<T> Mat4<T>::projPerspective(T fov_y, T aspect, T d_near,T d_far)
 }
 
 // Mat3
-// Change basis of transformation matrix
-// Inputs:	t = transformation matrix
+// Change basis of a matrix (i.e. transformation, rotation, inertial tensor)
+// Inputs:	m = matrix input
 //			b = basis transformation matrix
-// Returns:	transformation matrix with new basis
+// Returns:	matrix with new basis
 template <typename T>
-Mat3<T> Mat3<T>::chgBasis(Mat3<T> t, Mat3<T> b)
+Mat3<T> Mat3<T>::chgBasis(Mat3<T> m, Mat3<T> b)
 {
 	// TODO: Check that matrix is invertible or that matrix inverse succeeded
-	return b * t * b.inv();
+	return b * m * b.inv();
 }
 
 // Mat4
-// Change basis of transformation matrix
-// Inputs:	t = transformation matrix
+// Change basis of a matrix (i.e. transformation, rotation, inertial tensor)
+// Inputs:	m = matrix input
 //			b = basis transformation matrix
-// Returns:	transformation matrix with new basis
+// Returns:	matrix with new basis
 template <typename T>
-Mat4<T> Mat4<T>::chgBasis(Mat4<T> t, Mat4<T> b)
+Mat4<T> Mat4<T>::chgBasis(Mat4<T> m, Mat4<T> b)
 {
 	// TODO: Check that matrix is invertible or that matrix inverse succeeded
-	return b * t * b.inv();
+	return b * m * b.inv();
 }
 
 
