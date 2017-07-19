@@ -1,6 +1,6 @@
 // *****************************************************************************************************************************
-// MatmMisc.hpp
-// Acid Physics Miscellaneous Math Functions
+// math_misc.hpp
+// Miscellaneous Math Functions
 // Author(s): Cory Douthat
 // Copyright (c) 2017 Cory Douthat, All Rights Reserved.
 // *****************************************************************************************************************************
@@ -12,8 +12,8 @@
 #define _USE_MATH_DEFINES	//For PI definition
 #include <cmath>
 
-#include "Vec.hpp"
-#include "Mat.hpp"
+#include "vec.hpp"
+#include "mat.hpp"
 
 // Determinant() - Calculate the determinant of an arbitrary-sized square matrix
 // Inputs:  mat = matrix data array
@@ -66,7 +66,7 @@ T Determinant(const T *mat,unsigned int size)
     return det;
 }
 
-// TODO: Replace with Guassian Elimination
+// CAUTION: Numerically unstable. Use Gaussian Elimination instead unless you know what you're doing.
 // SolveCramer() - Solve a system of linear equations using Cramer's Rule.
 // Format Ax = b
 // Inputs:  A_mat = n x n matrix (array) defining the coefficients of the equations
