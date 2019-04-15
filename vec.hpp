@@ -55,7 +55,7 @@ public:
 	Vec2<T> norm()const { return lenSq() != 0 ? *this / len() : *this; }	// Get normalized vector
 	const Vec2<T>& normalize() { return lenSq() != 0 ? *this /= len() : *this; }	// Normalize vector
 	T angle()const { return atan2(y,x); }									// Angle of vector (from zero)
-	T angle(const Vec2<T> &b)const { return acos((*this*b) / (len() + b.len())); }// Angle between vectors TODO: check for divide-by-zero
+	T angle(const Vec2<T> &b)const { return acos((*this*b) / (len() * b.len())); }// Angle between vectors TODO: check for divide-by-zero
 	bool similar(const Vec2<T> &b,T margin = 0.01)const;					// Check if vectors are similar
 	const T* getData()const { return (const T*)(&v); }						// Get pointer to raw data
 	// Static Member Functions
@@ -106,7 +106,7 @@ public:
 	T lenSq()const { return x*x + y*y + z*z; }								// Length squared
 	Vec3<T> norm()const { return lenSq() != 0 ? *this / len() : *this; }	// Get normalized vector
 	const Vec3<T>& normalize() { return lenSq() != 0 ? *this /= len() : *this; }// Normalize vector
-	T angle(const Vec3<T> &b)const { return (*this*b) / (len() + b.len()); }// Angle between vectors
+	T angle(const Vec3<T> &b)const { return (*this*b) / (len() * b.len()); }// Angle between vectors
 	bool similar(const Vec3<T> &b,T margin = 0.01)const;					// Check if vectors are similar
 	Vec2<T> xy(){ return Vec2<T>(x, y); }									// Get XY components
 	const T* getData()const { return (const T*)(&v); }						// Get pointer to raw data
