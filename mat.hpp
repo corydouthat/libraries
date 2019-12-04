@@ -105,6 +105,7 @@ public:
 	Mat3<T> transp()const;								// Transpose
 	Mat3<T> inv()const;									// Inverse
 	T get(unsigned int col,unsigned int row)const;		// Get element
+	Mat2<T> getSub()const;								// Get 2x2 sub-matrix (upper-left)
 	void set(unsigned int col,unsigned int row,T s);	// Set element
 	const T* getData()const;							// Get pointer to raw data
 	void load(const T* data_in);						// Load in data
@@ -179,6 +180,7 @@ public:
     Mat4<T> transp()const;								// Transpose
     Mat4<T> inv()const;									// Inverse
     T get(unsigned int col,unsigned int row)const;		// Get element
+	Mat3<T> getSub()const;								// Get 3x3 sub-matrix (upper-left)
     void set(unsigned int col,unsigned int row,T s);	// Set element
     const T* getData()const;							// Get pointer to raw data
     void load(const T* data_in);						// Load in data
@@ -941,6 +943,39 @@ T Mat4<T>::get(unsigned int col,unsigned int row)const
 {
     if (col > 3 || row > 3) return 0;
     return v[col * 4 + row];
+}
+
+// Mat3
+// Get 2x2 sub-matrix (upper-left)
+template <typename T>
+Mat2<T> Mat3<T>::getSub()const
+{
+	Mat2<T> temp;
+	temp.set(0, 0, get(0, 0));
+	temp.set(0, 1, get(0, 1));
+	temp.set(1, 0, get(1, 0));
+	temp.set(1, 1, get(1, 1));
+
+	return temp;
+}
+
+// Mat4
+// Get 3x3 sub-matrix (upper-left)
+template <typename T>
+Mat3<T> Mat4<T>::getSub()const
+{
+	Mat3<T> temp;
+	temp.set(0, 0, get(0, 0));
+	temp.set(0, 1, get(0, 1));
+	temp.set(0, 2, get(0, 2));
+	temp.set(1, 0, get(1, 0));
+	temp.set(1, 1, get(1, 1));
+	temp.set(1, 2, get(1, 2));
+	temp.set(2, 0, get(2, 0));
+	temp.set(2, 1, get(2, 1));
+	temp.set(2, 2, get(2, 2));
+
+	return temp;
 }
 
 // Mat2
