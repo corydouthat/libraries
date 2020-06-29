@@ -274,7 +274,7 @@ bool SolveGaussSeidelClamped(const T* A_mat, const T* b_vec, const T* x_min, con
 //	Erin Catto GDC 2005 https://code.google.com/archive/p/box2d/downloads
 // Format:	JBλ = η or J_mat*B_mat*x_vec = z_vec
 // Inputs:  J_sp = [s by 2*n_d] jacobian matrix of constraint functions (sparse)
-//			j_map = [s by 2] mapping of sparse jacobian matrix bodies
+//			J_map = [s by 2] mapping of sparse jacobian matrix bodies
 //					Note: Each element(i,j) is the index of a rigid body. By convention, if a constraint
 //					is between a single rigid body and ground, then (i,1) = 0 and the corresponding 
 //					J(i,1) is zero.
