@@ -2,7 +2,7 @@
 // math_misc.hpp
 // Miscellaneous Math Functions
 // Author(s): Cory Douthat
-// Copyright (c) 2017 Cory Douthat, All Rights Reserved.
+// Copyright (c) 2020 Cory Douthat, All Rights Reserved.
 // *****************************************************************************************************************************
 
 #ifndef MATH_MISC_HPP_
@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #define _USE_MATH_DEFINES	//For PI definition
 #include <cmath>
+#include <limits>
 
 #include "vec.hpp"
 #include "mat.hpp"
@@ -182,87 +183,9 @@ bool SolveGaussElim(const T *A_mat, const T *b_vec, unsigned int n, T *x_vec)
 	return true;
 }
 
-// TODO/NOTE: It looks like this may be a failed experiment. Does not provide correct results when clamping. Problem form may simply be invalid.
-// TODO: UNTESTED
-// TODO: Add termination criteria (i.e. residual, etc)
-// TODO: Handle default min/max for x or individual +/- infinity values
-// TODO: TO-DO add checks for convergence issues??
-// SolveGaussSeidelClamped() - Solve an MLCP (Mixed Linear Complimentarity Problem) using Gauss-Seidel
-//	method with simple clamping constraints on unknowns. This may be equivalent to 
-//	Projected Gauss-Seidel method, but it's unclear. No optimization is attempted to
-//	target this to rigid body constraints specifically, or take advantage of matrix
-//	sparsity by reducing dimensions (as with Erin Catto GDC 2005 presentation)
-// References: https://en.wikipedia.org/wiki/Gauss%E2%80%93Seidel_method
-// Format: Ax = b
-// Inputs:  A_mat = [n by n], col-major order, defines the coefficients of the equations
-//          b_vec = [n] defines right-hand side of each linear equation
-//			x_min = [n] minimum bound of x, null ptr means -infinity (for whole vector)
-//			x_max = [n] maximum bound of x, null ptr means +infinity (for whole vector)
-//          n = number of equations/variables
-//			max_iter = maximum number of iterations
-// Return:  x_vec = [n] represents solution variables - passed by pointer
-//				Note: x_vec may be initialized with a best-guess (e.g. results from prev.
-//				frame) to warm-start the algorithm.
-//          return boolean specifying whether the operation was successful or not
-template <typename T>
-bool SolveGaussSeidelClamped(const T* A_mat, const T* b_vec, const T* x_min, const T* x_max, unsigned int n, unsigned int max_iter, T* x_vec)
-{
-	// Basic checks
-	if (n <= 0)
-		return false;
-
-	if (x_min && x_max)
-	{
-		for (unsigned int c = 0; c < n; c++)
-		{
-			if (x_min[c] > x_max[c])
-				return false;
-		}
-	}
-
-	T sum1, sum2;
-
-	for (unsigned int iter = 0; iter < max_iter; iter++)
-	{
-		for (int i = 0; i < n; i++)
-		{
-			// Calculate next iteration of x (i.e. k+1) using forward-substitution
-
-			// First summation term:
-			sum1 = 0;
-			for (int j = 0; j < i; j++)
-			{
-				sum1 += A_mat[i * n + j] * x_vec[j];
-			}
-
-			// Second summation term:
-			sum2 = 0;
-			for (int j = i + 1; j < n; j++)
-			{
-				sum2 += A_mat[i * n + j] * x_vec[j];
-			}
-
-			x_vec[i] = b_vec[i] - sum1 - sum2;
-
-			// Clamp value
-			if (x_min && x_vec[i] < x_min[i])
-				x_vec[i] = x_min[i];
-			else if (x_max && x_vec[i] > x_max[i])
-				x_vec[i] = x_max[i];
-		}
-
-		// Check termination criteria
-		// TO-DO
-	}
-
-	return true;
-}
 
 // TODO: UNTESTED
-// TODO: Check for positive semi-definite (if necessary), i.e. the JB matrix
-// TODO: Add alternate methods for termination / error checking?
-// TODO: How to handle infinity for min/max?
-// SolvePGSCatto() - Solve an MLCP (Mixed Linear Complimentarity Problem) using Projected Gauss-
+// SolveMLCP_PGS_Catto() - Solve an MLCP (Mixed Linear Complimentarity Problem) using Projected Gauss-
 //	Seidel method, an extension of Gauss-Seidel. In a computer graphics application, the primary use
 //	case for this method is to solve systems of inequalities related to constraints such as non-
 //	penetrating collisions, joints, etc. This implementation has been written with that particular
@@ -272,32 +195,137 @@ bool SolveGaussSeidelClamped(const T* A_mat, const T* b_vec, const T* x_min, con
 //	J_map to decode.
 // References: https://www.toptal.com/game/video-game-physics-part-iii-constrained-rigid-body-simulation
 //	Erin Catto GDC 2005 https://code.google.com/archive/p/box2d/downloads
-// Format:	JBλ = η or J_mat*B_mat*x_vec = z_vec
-// Inputs:  J_sp = [s by 2*n_d] jacobian matrix of constraint functions (sparse)
-//			J_map = [s by 2] mapping of sparse jacobian matrix bodies
+// Format:	JBλ = η or JBx = z
+// Note: All matrix arrays stored in column major order
+// Inputs:  J_sp = [s by 2*n_d] 
+//					Jacobian matrix of constraint functions (sparse)
+//			J_map = [s by 2] 
+//					Mapping of sparse jacobian matrix bodies (0 indexed)
 //					Note: Each element(i,j) is the index of a rigid body. By convention, if a constraint
-//					is between a single rigid body and ground, then (i,1) = 0 and the corresponding 
-//					J(i,1) is zero.
-//			B_mat = [n*n_d by s] M(inv)*J(transpose)
+//					is between a single rigid body and ground, then (i,0) = 0 and the corresponding 
+//					J(i,0) is zero.
+//			B_sp = [2*n_d by s] 
+//					B term: M(inv)*J(transpose) (sparse)
 //					M is a mass and inertia diagonal matrix of n*n_d by n*n_d
-//			z_vec (η) = [n*n_d] (1/dt)*ζ - J((1/dt)*V1 + M(inv)*F_ext)
+//					Use J_map for indexing
+//			z_vec (η) = [s]
+//					z(η) term: (1/dt)*ζ - J((1/dt)*V1 + M(inv)*F_ext)
 //					ζ is a constraint bias factor for stabilization
 //					V1 is the initial (previous) velocity
 //					F_ext is the external force acting on a body
-//			x_min (λ-) = minimum bound
-//			x_max (λ+) = maximum bound
+//			x_min_vec (λ-) = [s] 
+//					Minimum bound - use std inf (1.0 / 0.0) or max value to represent positive infinity
+//			x_max_vec (λ+) = [s]
+//					Maximum bound - use std -inf (-1.0 / 0.0) or lowest value to represent negative infinity
 //			s = number of constraints
 //			n = number of bodies
 //			n_d = number of elements per body (i.e. x,y,theta; x,y,z,quat(a,b,c); etc)
-// Return:  x_vec (λ) = [s] solution of unknowns
-//				Note: x_vec may be initialized with a best-guess (e.g. results from prev.
-//				frame) to warm-start the algorithm.
-//          return boolean specifying whether the operation was successful or not
+//			max_iter = maximum number of iterations
+//			x0_vec_in (λ0) [s]
+//					Warm start - initial guess at λ, usually result from the previous frame
+// Return:  x_vec (λ) = [s]
+//					Solution of unknowns
+//					Note: x_vec may be initialized with a best-guess (e.g. results from prev. frame) 
+//					to warm-start the algorithm.
+//          (return) boolean specifying whether the operation was successful or not
 template <typename T>
-bool SolvePGSCatto()
+bool SolveMLCP_PGS_Catto(const T *J_sp, const unsigned int *J_map, const T *B_sp, const T *z_vec,
+					const T *x_min_vec, const T *x_max_vec, unsigned int s, unsigned int n, 
+					unsigned int n_d, unsigned int max_iter, const T *x0_vec_in, T *x_vec)
 {
-	//TO-DO
-	return false;	// TEMP
+	// TO-DO:
+	// Add early termination checks - less than max error, etc
+	// Check for valid pointers, ints, etc
+	// Check max iterations for <= 0 and do something with it
+	// Check for positive semi-definite (if necessary), i.e. the JB matrix
+
+	// Work Variables
+	T a* = new T[n * n_d];
+	T d* = new T[s];
+	T temp1* = new T[n_d];	// Temp array vector
+	T temp3* = new T[n_d];	// Temp array vector
+	T temp2* = new T[n_d];	// Temp array vector
+	T temp4* = new T[n_d];	// Temp array vector
+	unsigned int b1;		// Jmap object 1 index
+	unsigned int b2;		// Jmap object 2 index
+	T x_delta;				// Temporary x(λ) delta
+	T a_b1* = new T[n_d];	// Temp array vector
+	T a_b2* = new T[n_d];	// Temp array vector
+
+	// Copy x0_vec_in
+	T x0_vec* = new T[s];
+	if (x0_vec_in)
+		memcpy(x0_vec, x0_vec_in, s * sizeof(T));
+	else
+		memset(x0_vec, 0, s * sizeof(T));
+
+	// Initialize / Warm Start x
+	memcpy(x_vec, x0_vec, s * sizeof(T));
+
+	// Initialize work variable a
+	a = ArrayMatMult(B, x);
+
+	// Initialize work variable d
+	// d(i) = dot(Jsp(i,0),Bsp(0,i)) + dot(Jsp(i,1),Bsp(1,i))
+	for (int i = 0; i < s; i++)
+	{
+		for (int j = 0; j < n_d; j++)
+		{
+			// Get J_sp(i,0) (i.e. first n_d-length half of row)
+			temp1[j] = J_sp[j * s + i];
+			// Get J_sp(i,1) (i.e. second n_d-length half of row)
+			temp3[j] = J_sp[(j + n_d) * s + i];
+			// Get B_sp(0,i) (i.e. first n_d-length half of col)
+			temp2[j] = B_sp[i * (2 * n_d) + j];
+			// Get B_sp(1,i) (i.e. second n_d-length half of col)
+			temp4[j] = B_sp[i * (2 * n_d) + j + n_d];
+		}
+		d[i] = ArrayVecDot(temp1, temp2) + ArrayVecDot(temp3, temp4);
+	}
+
+	// Main Iterative Loop
+	for (int iter = 1; iter <= max_iter; iter++)
+	{
+		for (int i = 0; i < s; i++)
+		{
+			for (int j = 0; j < n_d; j++)
+			{
+				// Get J_sp(i,0) (i.e. first n_d-length half of row)
+				temp1[j] = J_sp[j * s + i];
+				// Get J_sp(i,1) (i.e. second n_d-length half of row)
+				temp3[j] = J_sp[(j + n_d) * s + i];
+				// Get B_sp(0,i) (i.e. first n_d-length half of col)
+				temp2[j] = B_sp[i * (2 * n_d) + j];
+				// Get B_sp(1,i) (i.e. second n_d-length half of col)
+				temp4[j] = B_sp[i * (2 * n_d) + j + n_d];
+
+				// Get a(b1)
+				a_b1[j] = a[b1 * n_d + j];
+				// Get a(b2)
+				a_b2[j] = a[b2 * n_d + j];
+			}
+
+			b1 = J_map[i];		// Object 1 index
+			b2 = J_map[s + i];	// Object 2 index
+
+			// Tentative x_delta
+			x_delta = (z_vec[i] - ArrayVecDot(temp1, a_b1) - ArrayVecDot(temp3, a_b2)) / d[i];
+
+			// Test against constraints
+			x0_vec[i] = x_vec[i];	// Save last iteration result (same on first loop)
+			x_vec[i] = max(x_min_vec, min(x0_vec[i] + x_delta, x_max_vec));	// Check min/max
+			x_delta = x_vec[i] - x0_vec[i];	// Final delta
+
+			// Update work variable a
+			for (int j = 0; j < n_d; j++)
+			{
+				a[b1 * n_d + j] = a_b1[j] + x_delta[i] * temp2[j];
+				a[b2 * n_d + j] = a_b2[j] + x_delta[i] * temp4[j];
+			}
+		}
+	}
+
+	return true;	// TODO - check for issues
 }
 
 #endif
