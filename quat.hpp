@@ -4,7 +4,7 @@
 // Quaternion Libraries
 // Template definition for data type
 // Author(s): Cory Douthat
-// Copyright (c) 2017 Cory Douthat, All Rights Reserved.
+// Copyright (c) 2020 Cory Douthat, All Rights Reserved.
 // *****************************************************************************************************************************
 
 #ifndef QUAT_HPP_
