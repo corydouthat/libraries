@@ -199,7 +199,7 @@ Vec3<T>::Vec3(const Vec2<T> &b, const T &s)
 // Inputs	b = input vector
 //			s = last element
 template <typename T>
-Vec4<T>::Vec4(const Vec3<T> &b,const T& s = 0)
+Vec4<T>::Vec4(const Vec3<T> &b,const T& s)
 {
     memcpy(&v,&(b.v),3 * sizeof(T));
     v[3] = s;
@@ -506,7 +506,7 @@ bool Vec3<T>::similar(const Vec3<T> &b,T margin)const
 // Vec4
 // Check if vectors are within a certain margin of being equal
 template <typename T>
-bool Vec4<T>::similar(const Vec4<T> &b,T margin = 0.01)const
+bool Vec4<T>::similar(const Vec4<T> &b,T margin)const
 {
     return ((x - b.x <= margin) && (y - b.y <= margin) && (z - b.z <= margin) && (w - b.w <= margin));
 }

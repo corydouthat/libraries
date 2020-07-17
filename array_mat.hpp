@@ -15,7 +15,21 @@
 #define _USE_MATH_DEFINES	//For PI definition
 #include <cmath>
 
-template <typename T = float>
+#include "mat.hpp"
+
+template <class T> 
+const T& min(const T& a, const T& b)
+{
+    return !(b < a) ? a : b;
+}
+
+template<class T>
+const T& max(const T& a, const T& b)
+{
+    return (a < b) ? b : a;
+}
+
+template <typename T>
 class ArrayMat
 {
     // DATA
@@ -30,12 +44,12 @@ public:
     // Basic Operators
     const ArrayMat<T>& operator =(const ArrayMat<T>& b);    // Operator = (assignment)
     // Matrix Operators
-    ArrayMat<T> operator +(const ArrayMat<T>& b)const;	    // Operator +
-    ArrayMat<T> operator -(const ArrayMat<T>& b)const;	    // Operator -
-    ArrayMat<T> operator *(const ArrayMat<T>& b)const;		// Operator *
+    const ArrayMat<T>& operator +(const ArrayMat<T>& b)const;	// Operator +
+    const ArrayMat<T>& operator -(const ArrayMat<T>& b)const;	// Operator -
+    const ArrayMat<T>& operator *(const ArrayMat<T>& b)const;	// Operator *
     // Scalar Operators
-    ArrayMat<T> operator *(T s)const;						// Operator * (scalar)
-    ArrayMat<T> operator -()const { return *this * -1; }	// Operator - (scalar inverse)
+    const ArrayMat<T>& operator *(T s)const;					// Operator * (scalar)
+    const ArrayMat<T>& operator -()const { return *this * -1; }	// Operator - (scalar inverse)
     const ArrayMat<T>& operator *=(T s);                    // Operator *= (scalar)
     // Other Member Functions
     bool isEmpty()const;                                    // Check if empty (null pointer)
@@ -48,7 +62,19 @@ public:
     ArrayMat<T> transp()const;								// Transpose
     //ArrayMat<T> inv()const;							    // Inverse (square matrix)
     ArrayMat<T> inv_diag()const;                            // Inverse (diagonal matrix)
+
+    // Discrete Matrix (Mat2, Mat3, Mat4) Functions
+#ifdef MAT_HPP_
+    // Operators
+    bool operator==(const Mat2<T> b)const;
+    bool operator==(const Mat3<T> b)const;
+    bool operator==(const Mat4<T> b)const;
+    bool operator!=(const Mat2<T> b)const { return !(*this == b); }
+    bool operator!=(const Mat3<T> b)const { return !(*this == b); }
+    bool operator!=(const Mat4<T> b)const { return !(*this == b); }
+#endif
 };
+
 
 // BASIC OPERATORS
 // *****************************************************************************************************************************
@@ -84,9 +110,9 @@ const ArrayMat<T>& ArrayMat<T>::operator =(const ArrayMat<T>& b)
 // Will attempt to add matrices even if dimensions don't match
 // Output will match dimensions of first addend (a)
 template <typename T>
-ArrayMat<T> ArrayMat<T>::operator +(const ArrayMat<T>& b)const
+const ArrayMat<T>& ArrayMat<T>::operator +(const ArrayMat<T>& b)const
 {
-    ArrayMat<T> y;
+    ArrayMat<T> *y = new ArrayMat<T>;
     unsigned int min_r, min_c;
 
     // Check for empty b matrix
@@ -97,7 +123,7 @@ ArrayMat<T> ArrayMat<T>::operator +(const ArrayMat<T>& b)const
     if (isEmpty())
         return b;
 
-    y.allocate(rows, cols);
+    y->allocate(rows, cols);
     min_r = min(rows, b.rows);
     min_c = min(cols, b.cols);
 
@@ -105,23 +131,23 @@ ArrayMat<T> ArrayMat<T>::operator +(const ArrayMat<T>& b)const
     {
         for (unsigned int i = 0; i < rows; i++)
         {
-            if (i < min_rows && j < min_cols)
-                y.v[j][i] = v[j][i] + b.v[j][i];
+            if (i < min_r && j < min_c)
+                y->set(j, i, get(j, i) + b.get(j, i));
             else
-                y.v[j][i] = v[j][i];
+                y->set(j, i, get(j, i));
         }
     }
 
-    return y;
+    return *y;
 }
 
 // - operator
 // Will attempt to subtract matrices even if dimensions don't match
 // Output will match dimensions of first term (a)
 template <typename T>
-ArrayMat<T> ArrayMat<T>::operator -(const ArrayMat<T>& b)const
+const ArrayMat<T>& ArrayMat<T>::operator -(const ArrayMat<T>& b)const
 {
-    ArrayMat<T> y;
+    ArrayMat<T> *y = new ArrayMat<T>;
     unsigned int min_r, min_c;
 
     // Check for empty b matrix
@@ -132,7 +158,7 @@ ArrayMat<T> ArrayMat<T>::operator -(const ArrayMat<T>& b)const
     if (isEmpty())
         return -b;
 
-    y.allocate(rows, cols);
+    y->allocate(rows, cols);
     min_r = min(rows, b.rows);
     min_c = min(cols, b.cols);
 
@@ -140,42 +166,42 @@ ArrayMat<T> ArrayMat<T>::operator -(const ArrayMat<T>& b)const
     {
         for (unsigned int i = 0; i < rows; i++)
         {
-            if (i < min_rows && j < min_cols)
-                y.v[j][i] = v[j][i] - b.v[j][i];
+            if (i < min_r && j < min_c)
+                y->set(j, i, get(j, i) - b.get(j, i));
             else
-                y.v[j][i] = v[j][i];
+                y->set(j, i, get(j, i));
         }
     }
 
-    return y;
+    return *y;
 }
 
 // operator *
 // Only allowed when number of columns in a equals rows in b
 // Will return empty matrix if these conditions aren't met
 template <typename T>
-ArrayMat<T> ArrayMat<T>::operator *(const ArrayMat<T>& b)const
+const ArrayMat<T>& ArrayMat<T>::operator *(const ArrayMat<T>& b)const
 {
-    ArrayMat<T> y;
+    ArrayMat<T> *y = new ArrayMat<T>;
 
     // Check conditions
     if (isEmpty() || b.isEmpty() || cols != b.rows)
-        return y;   // No operation, empty matrix
+        return *y;   // No operation, empty matrix
 
-    y.allocateZero(rows, b.cols);
+    y->allocateZero(rows, b.cols);
 
-    for (unsigned int j = 0; j < y.cols; j++)			//j = cols of y/b
+    for (unsigned int j = 0; j < y->cols; j++)			//j = cols of y/b
     {
-        for (unsigned int i = 0; i < y.rows; i++)		//i = rows of y/a
+        for (unsigned int i = 0; i < y->rows; i++)		//i = rows of y/a
         {
-            for (unsigned int k = 0; k < y.cols; k++)	//k = sum index
+            for (unsigned int k = 0; k < y->cols; k++)	//k = sum index
             {
-                y.v[j][i] += v[k][i] * b.v[j][k];
+                y->set(j, i, y->get(j, i) + get(k, i) * b.get(j, k));
             }
         }
     }
 
-    return y;
+    return *y;
 }
 
 
@@ -183,24 +209,24 @@ ArrayMat<T> ArrayMat<T>::operator *(const ArrayMat<T>& b)const
 // *****************************************************************************************************************************
 
 template <typename T>
-ArrayMat<T> ArrayMat<T>::operator *(T s)const
+const ArrayMat<T>& ArrayMat<T>::operator *(T s)const
 {
-    ArrayMat<T> y;
+    ArrayMat<T> *y = new ArrayMat<T>;
     
     if (isEmpty())
         return *this;
 
-    y.allocate(rows, cols);
+    y->allocate(rows, cols);
 
     for (unsigned int j = 0; j < cols; j++)
     {
         for (unsigned int i = 0; i < rows; i++)
         {
-            y.v[j][i] = v[j][i] * s;
+            y->set(j, i, get(j, i) * s);
         }
     }
 
-    return y;
+    return *y;
 }
 
 template <typename T>
@@ -213,7 +239,7 @@ const ArrayMat<T>& ArrayMat<T>::operator *=(T s)
     {
         for (unsigned int i = 0; i < rows; i++)
         {
-            v[j][i] *= s;
+            set(j, i, get(j, i) * s);
         }
     }
 
@@ -239,7 +265,7 @@ template <typename T>
 void ArrayMat<T>::clear()
 {
     if (v)
-        delete v;
+        delete[] v;
 
     v = nullptr;
 
@@ -253,73 +279,122 @@ void ArrayMat<T>::allocate(unsigned int r, unsigned int c)
 {
     clear();
 
-    v = new T[cols][rows];
-
     rows = r;
     cols = c;
+    
+    v = new T[cols * rows];  
 }
 
 // Allocate memory (to zeros)
 template <typename T>
-void ArrayMat<T>::allocateZero(unsigned int rows, unsigned int cols)
+void ArrayMat<T>::allocateZero(unsigned int r, unsigned int c)
 {
     clear();
 
-    v = new T[cols][rows];
-    memset(v, 0, rows * cols * sizeof(T));
-
     rows = r;
     cols = c;
+
+    v = new T[cols * rows];
+    memset(v, 0, rows * cols * sizeof(T));
 }
 
 template <typename T>
 T ArrayMat<T>::get(unsigned int col, unsigned int row)const
 {
-    return v[col][row];
+    if (!isEmpty() && col <= cols && row <= rows)
+        return v[col * rows + row];
+    else
+        return T(NAN);
 }
 
 template <typename T>
 void ArrayMat<T>::set(unsigned int col, unsigned int row, T s)
 {
-    v[col][row] = s;
+    
+    if (!isEmpty() && col <= cols && row <= rows)
+        v[col * rows + row] = s;
 }
 
 // Transpose
 template <typename T>
 ArrayMat<T> ArrayMat<T>::transp()const
 {
-    ArrayMat<T> y;
+    ArrayMat<T> *y = new ArrayMat<T>;
     
     if (isEmpty())
-        return y;
+        return *y;
 
-    y.allocate(cols, rows);
+    y->allocate(cols, rows);
 
     for (unsigned int j = 0; j < cols; j++)
     {
         for (unsigned int i = 0; i < rows; i++)
         {
-            y.[i][j] = v[j][i];
+            y->set(i, j, get(j, i));
         }
     }
+
+    return *y;
 }
 
 // Inverse (diagonal matrix only)
 template <typename T>
 ArrayMat<T> ArrayMat<T>::inv_diag()const
 {
-    ArrayMat<T> y;
+    ArrayMat<T> *y = new ArrayMat<T>;
 
     // Check for empty or non-square matrix
     if (isEmpty() || rows != cols)
-        return y;
+        return *y;
 
-    y.allocateZero(rows, cols);
+    y->allocateZero(rows, cols);
 
     for (unsigned int i = 0; i < rows; i++)
     {
-        y.v[i][i] = T(1) / v[i][i];
+        y->set(i, i, T(1) / get(i, i));
     }
+
+    return *y;
 }
+
+
+// DISCRETE MATRIX (MAT2, MAT3, MAT4) FUNCTIONS
+// *****************************************************************************************************************************
+#ifdef MAT_HPP_
+// Operators
+
+template <typename T>
+bool ArrayMat<T>::operator==(const Mat2<T> b)const
+{
+    if (r != 2 || c != 2)
+        return false;
+    else if (memcmp(v, b.getData(), 2 * 2 * sizeof(T)))
+        return false;
+    else
+        return true;
+}
+
+template <typename T>
+bool ArrayMat<T>::operator==(const Mat3<T> b)const
+{
+    if (r != 3 || c != 3)
+        return false;
+    else if (memcmp(v, b.getData(), 3 * 3 * sizeof(T)))
+        return false;
+    else
+        return true;
+}
+
+template <typename T>
+bool ArrayMat<T>::operator==(const Mat4<T> b)const
+{
+    if (rows != 4 || cols != 4)
+        return false;
+    else if (memcmp(v, b.getData(), 4 * 4 * sizeof(T)))
+        return false;
+    else
+        return true;
+}
+#endif
 
 #endif

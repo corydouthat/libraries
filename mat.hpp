@@ -15,6 +15,8 @@
 #include <cmath>
 #include <cstring>
 
+#include <vec.hpp>
+
 template <typename T = float>
 class Mat2
 {
@@ -346,7 +348,7 @@ Mat3<T>::Mat3(const Mat2<T> &b,T last_element)
 // Mat4
 // Constructor: from 3x3 matrix, last element usually 1
 template <typename T>
-Mat4<T>::Mat4(const Mat3<T> &b,T last_element = 1)
+Mat4<T>::Mat4(const Mat3<T> &b,T last_element)
 {
     v[0] = b.v[0];	v[4] = b.v[3];	v[8] = b.v[6];  v[12] = 0;
     v[1] = b.v[1];	v[5] = b.v[4];	v[9] = b.v[7];  v[13] = 0;
@@ -866,7 +868,6 @@ Mat3<T> Mat3<T>::inv()const
 }
 // Mat4
 // Inverse
-// Based roughly on Ian Millinton's book, "Game Physics Engine Development"
 template <typename T>
 Mat4<T> Mat4<T>::inv()const
 {
@@ -875,7 +876,8 @@ Mat4<T> Mat4<T>::inv()const
 	// TODO: Check if determinant is close to zero
 	if (T d = det())
 	{
-		// TODO: Generalize - this implementation assumes a transformation matrix and fourth row = 0,0,0,1
+		// Optimized implementation assumes a transformation matrix and fourth row = 0,0,0,1
+		// Based roughly on Ian Millinton's book, "Game Physics Engine Development"
 		if (v[3] == 0 && v[7] == 0 && v[11] == 0 && v[15] == 1)
 		{
 			temp.v[0] = (-v[6] * v[9] + v[5] * v[10]) / d;
@@ -912,11 +914,130 @@ Mat4<T> Mat4<T>::inv()const
 			temp.v[3] = temp.v[7] = temp.v[11] = 0;
 			temp.v[15] = 1;
 		}
+		else
+		// Based on derivation of MESA GLU library implementation from:
+		// https://stackoverflow.com/questions/1148309/inverting-a-4x4-matrix
+		{
+			temp.v[0] = v[5] * v[10] * v[15] -
+				v[5] * v[11] * v[14] -
+				v[9] * v[6] * v[15] +
+				v[9] * v[7] * v[14] +
+				v[13] * v[6] * v[11] -
+				v[13] * v[7] * v[10];
+
+			temp.v[4] = -v[4] * v[10] * v[15] +
+				v[4] * v[11] * v[14] +
+				v[8] * v[6] * v[15] -
+				v[8] * v[7] * v[14] -
+				v[12] * v[6] * v[11] +
+				v[12] * v[7] * v[10];
+
+			temp.v[8] = v[4] * v[9] * v[15] -
+				v[4] * v[11] * v[13] -
+				v[8] * v[5] * v[15] +
+				v[8] * v[7] * v[13] +
+				v[12] * v[5] * v[11] -
+				v[12] * v[7] * v[9];
+
+			temp.v[12] = -v[4] * v[9] * v[14] +
+				v[4] * v[10] * v[13] +
+				v[8] * v[5] * v[14] -
+				v[8] * v[6] * v[13] -
+				v[12] * v[5] * v[10] +
+				v[12] * v[6] * v[9];
+
+			temp.v[1] = -v[1] * v[10] * v[15] +
+				v[1] * v[11] * v[14] +
+				v[9] * v[2] * v[15] -
+				v[9] * v[3] * v[14] -
+				v[13] * v[2] * v[11] +
+				v[13] * v[3] * v[10];
+
+			temp.v[5] = v[0] * v[10] * v[15] -
+				v[0] * v[11] * v[14] -
+				v[8] * v[2] * v[15] +
+				v[8] * v[3] * v[14] +
+				v[12] * v[2] * v[11] -
+				v[12] * v[3] * v[10];
+
+			temp.v[9] = -v[0] * v[9] * v[15] +
+				v[0] * v[11] * v[13] +
+				v[8] * v[1] * v[15] -
+				v[8] * v[3] * v[13] -
+				v[12] * v[1] * v[11] +
+				v[12] * v[3] * v[9];
+
+			temp.v[13] = v[0] * v[9] * v[14] -
+				v[0] * v[10] * v[13] -
+				v[8] * v[1] * v[14] +
+				v[8] * v[2] * v[13] +
+				v[12] * v[1] * v[10] -
+				v[12] * v[2] * v[9];
+
+			temp.v[2] = v[1] * v[6] * v[15] -
+				v[1] * v[7] * v[14] -
+				v[5] * v[2] * v[15] +
+				v[5] * v[3] * v[14] +
+				v[13] * v[2] * v[7] -
+				v[13] * v[3] * v[6];
+
+			temp.v[6] = -v[0] * v[6] * v[15] +
+				v[0] * v[7] * v[14] +
+				v[4] * v[2] * v[15] -
+				v[4] * v[3] * v[14] -
+				v[12] * v[2] * v[7] +
+				v[12] * v[3] * v[6];
+
+			temp.v[10] = v[0] * v[5] * v[15] -
+				v[0] * v[7] * v[13] -
+				v[4] * v[1] * v[15] +
+				v[4] * v[3] * v[13] +
+				v[12] * v[1] * v[7] -
+				v[12] * v[3] * v[5];
+
+			temp.v[14] = -v[0] * v[5] * v[14] +
+				v[0] * v[6] * v[13] +
+				v[4] * v[1] * v[14] -
+				v[4] * v[2] * v[13] -
+				v[12] * v[1] * v[6] +
+				v[12] * v[2] * v[5];
+
+			temp.v[3] = -v[1] * v[6] * v[11] +
+				v[1] * v[7] * v[10] +
+				v[5] * v[2] * v[11] -
+				v[5] * v[3] * v[10] -
+				v[9] * v[2] * v[7] +
+				v[9] * v[3] * v[6];
+
+			temp.v[7] = v[0] * v[6] * v[11] -
+				v[0] * v[7] * v[10] -
+				v[4] * v[2] * v[11] +
+				v[4] * v[3] * v[10] +
+				v[8] * v[2] * v[7] -
+				v[8] * v[3] * v[6];
+
+			temp.v[11] = -v[0] * v[5] * v[11] +
+				v[0] * v[7] * v[9] +
+				v[4] * v[1] * v[11] -
+				v[4] * v[3] * v[9] -
+				v[8] * v[1] * v[7] +
+				v[8] * v[3] * v[5];
+
+			temp.v[15] = v[0] * v[5] * v[10] -
+				v[0] * v[6] * v[9] -
+				v[4] * v[1] * v[10] +
+				v[4] * v[2] * v[9] +
+				v[8] * v[1] * v[6] -
+				v[8] * v[2] * v[5];
+
+			for (int i = 0; i < 16; i++)
+				temp.v[i] /= d;
+		}
 	}
 
 	// Return result OR...
 	// If matrix is not invertible - return zero matrix to make detection of this issue easier
-	// TOTO: ^ this might not be the best idea...
+	// TOTO: ^ this might not be the best idea... Later possibly switch to bool return and pointer
 	return temp;
 }
 
@@ -1070,7 +1191,7 @@ Mat3<T> Mat3<T>::zero()
 template <typename T>
 Mat4<T> Mat4<T>::zero()
 {
-    return Mat4<T>(0);
+    return Mat4<T>(T(0));
 }
 
 // Mat2
