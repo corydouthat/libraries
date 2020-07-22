@@ -206,7 +206,7 @@ const ArrayMat<T>& ArrayMat<T>::operator *(const ArrayMat<T>& b)const
     {
         for (unsigned int i = 0; i < y->rows; i++)		//i = rows of y/a
         {
-            for (unsigned int k = 0; k < y->cols; k++)	//k = sum index
+            for (unsigned int k = 0; k < b.rows; k++)	//k = sum index
             {
                 y->set(j, i, y->get(j, i) + get(k, i) * b.get(j, k));
             }
