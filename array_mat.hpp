@@ -38,7 +38,10 @@ class ArrayMat
 public:
     // FUNCTIONS
     // Constructors and Destructor
-    ArrayMat() : v(nullptr), rows(0), cols(0) {}			// Constructor: null pointer
+    ArrayMat() : v(nullptr), rows(0), cols(0) {}
+    ArrayMat(const ArrayMat<T>& b) { *this = b; }
+    ArrayMat(unsigned int r, unsigned int c) { allocate(r, c); }
+    ArrayMat(unsigned int r, unsigned int c, T s) { allocateValue(r, c, s); }
     ~ArrayMat() { clear(); }
 
     // Basic Operators
@@ -56,12 +59,21 @@ public:
     void clear();                                           // Erase and set to null/zero
     void allocate(unsigned int r, unsigned int c);          // Allocate memory
     void allocateZero(unsigned int r, unsigned int c);      // Allocate memory (to zeros)
+    void allocateValue(unsigned int r, unsigned int c, T s);// Allocate memory (to s value)
     T get(unsigned int col, unsigned int row)const;		    // Get element
     void set(unsigned int col, unsigned int row, T s);	    // Set element
+    const T* getData()const { return v; };                   // Return const pointer to data
+    unsigned int getCount()const { return rows * cols; }    // Return number of elements
     //T det()const;                                         // Determinant (square matrix)
-    ArrayMat<T> transp()const;								// Transpose
+    const ArrayMat<T>& transp()const;						// Transpose
     //ArrayMat<T> inv()const;							    // Inverse (square matrix)
-    ArrayMat<T> inv_diag()const;                            // Inverse (diagonal matrix)
+    const ArrayMat<T>& invDiag()const;                      // Inverse (diagonal matrix)
+
+    // Friend Functions
+    template <typename sT> friend const ArrayMat<sT>& operator *(sT a, const ArrayMat<sT>& b);
+
+    // Static Member Functions
+    static T dotProduct(const ArrayMat<T>& a, const ArrayMat<T>& b);
 
     // Discrete Matrix (Mat2, Mat3, Mat4) Functions
 #ifdef MAT_HPP_
@@ -289,13 +301,16 @@ void ArrayMat<T>::allocate(unsigned int r, unsigned int c)
 template <typename T>
 void ArrayMat<T>::allocateZero(unsigned int r, unsigned int c)
 {
-    clear();
-
-    rows = r;
-    cols = c;
-
-    v = new T[cols * rows];
+    allocate(r, c);
     memset(v, 0, rows * cols * sizeof(T));
+}
+
+// Allocate memory (to s value)
+template <typename T>
+void ArrayMat<T>::allocateValue(unsigned int r, unsigned int c, T s)
+{
+    allocate(r, c);
+    memset(v, s, rows * cols * sizeof(T));
 }
 
 template <typename T>
@@ -317,7 +332,7 @@ void ArrayMat<T>::set(unsigned int col, unsigned int row, T s)
 
 // Transpose
 template <typename T>
-ArrayMat<T> ArrayMat<T>::transp()const
+const ArrayMat<T>& ArrayMat<T>::transp()const
 {
     ArrayMat<T> *y = new ArrayMat<T>;
     
@@ -339,7 +354,7 @@ ArrayMat<T> ArrayMat<T>::transp()const
 
 // Inverse (diagonal matrix only)
 template <typename T>
-ArrayMat<T> ArrayMat<T>::inv_diag()const
+const ArrayMat<T>& ArrayMat<T>::invDiag()const
 {
     ArrayMat<T> *y = new ArrayMat<T>;
 
@@ -355,6 +370,36 @@ ArrayMat<T> ArrayMat<T>::inv_diag()const
     }
 
     return *y;
+}
+
+
+// FRIEND FUNCTIONS
+// *****************************************************************************************************************************
+template <typename sT> 
+const ArrayMat<sT>& operator *(sT a, const ArrayMat<sT>& b)
+{
+    return b * a;
+}
+
+
+// STATIC MEMBER FUNCTIONS
+// *****************************************************************************************************************************
+template <typename T>
+T ArrayMat<T>::dotProduct(const ArrayMat<T>& a, const ArrayMat<T>& b)
+{
+    T temp = 0;
+    
+    if (a.cols == b.cols == 1 && a.rows == b.rows)
+    {
+        for (unsigned int i = 0; i < a.rows; i++)
+        {
+            temp += a.get(0, i) * b.get(0, i);
+        }
+
+        return temp;
+    }
+    else
+        return NAN;
 }
 
 

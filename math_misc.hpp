@@ -15,6 +15,8 @@
 
 #include "vec.hpp"
 #include "mat.hpp"
+#include "array_mat.hpp"
+
 
 // Determinant() - Calculate the determinant of an arbitrary-sized square matrix
 // Inputs:  mat = matrix data array
@@ -229,9 +231,10 @@ bool SolveGaussElim(const T *A_mat, const T *b_vec, unsigned int n, T *x_vec)
 //					to warm-start the algorithm.
 //          (return) boolean specifying whether the operation was successful or not
 template <typename T>
-bool SolveMLCP_PGS_Catto(const T *J_sp, const unsigned int *J_map, const T *B_sp, const T *z_vec,
-					const T *x_min_vec, const T *x_max_vec, unsigned int s, unsigned int n, 
-					unsigned int n_d, unsigned int max_iter, const T *x0_vec_in, T *x_vec)
+bool SolveMLCP_PGS_Catto(const ArrayMat<T> &J_sp, const ArrayMat<unsigned int> &J_map, const ArrayMat<T> &B_sp, 
+					const ArrayMat<T> &z_vec, const ArrayMat<T> &x_min_vec, const ArrayMat<T> &x_max_vec, 
+					unsigned int s, unsigned int n, unsigned int n_d, unsigned int max_iter, 
+					const ArrayMat<T> &x0_vec_in, ArrayMat<T> *x_vec)
 {
 	// TO-DO:
 	// Add early termination checks - less than max error, etc
@@ -240,87 +243,105 @@ bool SolveMLCP_PGS_Catto(const T *J_sp, const unsigned int *J_map, const T *B_sp
 	// Check for positive semi-definite (if necessary), i.e. the JB matrix
 
 	// Work Variables
-	T a* = new T[n * n_d];
-	T d* = new T[s];
-	T temp1* = new T[n_d];	// Temp array vector
-	T temp3* = new T[n_d];	// Temp array vector
-	T temp2* = new T[n_d];	// Temp array vector
-	T temp4* = new T[n_d];	// Temp array vector
-	unsigned int b1;		// Jmap object 1 index
-	unsigned int b2;		// Jmap object 2 index
-	T x_delta;				// Temporary x(λ) delta
-	T a_b1* = new T[n_d];	// Temp array vector
-	T a_b2* = new T[n_d];	// Temp array vector
+	ArrayMat<T> a(n * n_d, 1, 0);	// Catto work variable
+	ArrayMat<T> d(s, 1, 0);			// Catto work variable
+	ArrayMat<T> temp1(n_d, 1, 0);	// Temp array vector
+	ArrayMat<T> temp3(n_d, 1, 0);	// Temp array vector
+	ArrayMat<T> temp2(n_d, 1, 0);	// Temp array vector
+	ArrayMat<T> temp4(n_d, 1, 0);	// Temp array vector
+	unsigned int b1;				// Jmap object 1 index
+	unsigned int b2;				// Jmap object 2 index
+	ArrayMat<T> x_delta(s, 1, 0);	// Temporary x(λ) delta
+	ArrayMat<T> a_b1(n_d, 1, 0);	// Temp array vector
+	ArrayMat<T> a_b2(n_d, 1, 0);	// Temp array vector
+	ArrayMat<T>* x0_vec;
 
 	// Copy x0_vec_in
-	T x0_vec* = new T[s];
-	if (x0_vec_in)
-		memcpy(x0_vec, x0_vec_in, s * sizeof(T));
+	if (!x0_vec_in.isEmpty())
+		x0_vec = new ArrayMat<T>(x0_vec_in);
 	else
-		memset(x0_vec, 0, s * sizeof(T));
+		x0_vec = new ArrayMat<T>(s, 1, 0);
 
 	// Initialize / Warm Start x
-	memcpy(x_vec, x0_vec, s * sizeof(T));
+	*x_vec = *x0_vec;
 
 	// Initialize work variable a
-	a = ArrayMatMult(B, x);
+	// Generate full B matrix - TODO: not efficient...
+	ArrayMat<T> B(n * n_d, s, 0);
+	for (unsigned int j = 0; j < s; j++)
+	{
+		for (unsigned int i = 0; i < 2; i++)
+		{
+			for (unsigned int k = 0; k < n_d; k++)
+			{
+				B.set(j, J_map.get(i, j) * n_d + k, B_sp.get(j, i * n_d + k));
+			}
+		}
+	}
+	a = B * *x_vec;
 
 	// Initialize work variable d
 	// d(i) = dot(Jsp(i,0),Bsp(0,i)) + dot(Jsp(i,1),Bsp(1,i))
-	for (int i = 0; i < s; i++)
+	for (unsigned int i = 0; i < s; i++)
 	{
-		for (int j = 0; j < n_d; j++)
+		for (unsigned int j = 0; j < n_d; j++)
 		{
 			// Get J_sp(i,0) (i.e. first n_d-length half of row)
-			temp1[j] = J_sp[j * s + i];
+			temp1.set(0, j, J_sp.get(j, i));
 			// Get J_sp(i,1) (i.e. second n_d-length half of row)
-			temp3[j] = J_sp[(j + n_d) * s + i];
+			temp3.set(0, j, J_sp.get(j + n_d, i));
 			// Get B_sp(0,i) (i.e. first n_d-length half of col)
-			temp2[j] = B_sp[i * (2 * n_d) + j];
+			temp2.set(0, j, B_sp.get(i, j));
 			// Get B_sp(1,i) (i.e. second n_d-length half of col)
-			temp4[j] = B_sp[i * (2 * n_d) + j + n_d];
+			temp4.set(0, j, B_sp.get(i, j + n_d));
 		}
-		d[i] = ArrayVecDot(temp1, temp2) + ArrayVecDot(temp3, temp4);
+		d.set(0, i, ArrayMat<T>::dotProduct(temp1, temp2) + ArrayMat<T>::dotProduct(temp3, temp4));
 	}
 
 	// Main Iterative Loop
-	for (int iter = 1; iter <= max_iter; iter++)
+	for (unsigned int iter = 1; iter <= max_iter; iter++)
 	{
-		for (int i = 0; i < s; i++)
+		for (unsigned int i = 0; i < s; i++)
 		{
-			for (int j = 0; j < n_d; j++)
+			b1 = J_map.get(0, i);	// Object 1 index
+			b2 = J_map.get(1, i);	// Object 2 index
+
+			for (unsigned int j = 0; j < n_d; j++)
 			{
 				// Get J_sp(i,0) (i.e. first n_d-length half of row)
-				temp1[j] = J_sp[j * s + i];
+				temp1.set(0, j, J_sp.get(j, i));
 				// Get J_sp(i,1) (i.e. second n_d-length half of row)
-				temp3[j] = J_sp[(j + n_d) * s + i];
+				temp3.set(0, j, J_sp.get(j + n_d, i));
 				// Get B_sp(0,i) (i.e. first n_d-length half of col)
-				temp2[j] = B_sp[i * (2 * n_d) + j];
+				temp2.set(0, j, B_sp.get(i, j));
 				// Get B_sp(1,i) (i.e. second n_d-length half of col)
-				temp4[j] = B_sp[i * (2 * n_d) + j + n_d];
+				temp4.set(0, j, B_sp.get(i, j + n_d));
 
 				// Get a(b1)
-				a_b1[j] = a[b1 * n_d + j];
+				a_b1.set(0, j, a.get(0, b1 * n_d + j));
 				// Get a(b2)
-				a_b2[j] = a[b2 * n_d + j];
+				a_b2.set(0, j, a.get(0, b2 * n_d + j));
 			}
 
-			b1 = J_map[i];		// Object 1 index
-			b2 = J_map[s + i];	// Object 2 index
-
 			// Tentative x_delta
-			x_delta = (z_vec[i] - ArrayVecDot(temp1, a_b1) - ArrayVecDot(temp3, a_b2)) / d[i];
+			if (d.get(0, i) != T(0))
+				x_delta.set(0, i, (z_vec.get(0, i) - ArrayMat<T>::dotProduct(temp1, a_b1) - ArrayMat<T>::dotProduct(temp3, a_b2)) / d.get(0, i));
+			else
+				x_delta.set(0, i, 0);	// TODO: not sure if this is valid. Might be okay if numerator is also zero...
 
 			// Test against constraints
-			x0_vec[i] = x_vec[i];	// Save last iteration result (same on first loop)
-			x_vec[i] = max(x_min_vec, min(x0_vec[i] + x_delta, x_max_vec));	// Check min/max
-			x_delta = x_vec[i] - x0_vec[i];	// Final delta
+			// Save last iteration result (same on first loop)
+			x0_vec->set(0, i, x_vec->get(0, i));
+			// Check min/max
+			x_vec->set(0, i, max(x_min_vec.get(0, i), min(x0_vec->get(0, i) + x_delta.get(0, i), x_max_vec.get(0, i))));
+			// Final delta
+			x_delta.set(0, i, x_vec->get(0, i) - x0_vec->get(0, i));
 
 			// Update work variable a
-			for (int j = 0; j < n_d; j++)
+			for (unsigned int j = 0; j < n_d; j++)
 			{
-				a[b1 * n_d + j] = a_b1[j] + x_delta[i] * temp2[j];
-				a[b2 * n_d + j] = a_b2[j] + x_delta[i] * temp4[j];
+				a.set(0, b1 * n_d + j, a_b1.get(0, j) + x_delta.get(0, i) * temp2.get(0, j));
+				a.set(0, b2 * n_d + j, a_b2.get(0, j) + x_delta.get(0, i) * temp4.get(0, j));
 			}
 		}
 	}

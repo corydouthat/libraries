@@ -242,7 +242,7 @@ Quat<T> Quat<T>::rotate(const Quat<T> &q2)const
 
 // Check if Quats are similar
 template <typename T>
-bool Quat<T>::similar(const Quat<T> &b, T margin = 0.01)const
+bool Quat<T>::similar(const Quat<T> &b, T margin)const
 {
 	return ((a - b.a <= margin) && (b - b.b <= margin) && (c - b.c <= margin) && (d - b.d <= margin));
 }
