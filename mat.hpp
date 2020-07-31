@@ -31,6 +31,8 @@ public:
 	Mat2(const T *data_in);								// Constructor: data array
 	// Basic Operators
 	const Mat2<T>& operator =(const Mat2<T> &b);		// Operator = (assignment)
+	template <typename T2>
+	const Mat2<T>& operator =(const Mat2<T2>& b);		// Operator = (assignment/conversion)
 	bool operator ==(const Mat2<T>& b)const;			// Operator ==
 	bool operator !=(const Mat2<T>& b)const;			// Operator !=
 	// Matrix Operators
@@ -71,7 +73,7 @@ public:
 
 	// Friend declarations
 	template <class T2>
-	friend class Mat3;
+	friend class Mat2;
 };
 
 template <typename T = float>
@@ -89,6 +91,8 @@ public:
 	Mat3(const T *data_in);								// Constructor: data array
 	// Basic Operators
 	const Mat3<T>& operator =(const Mat3<T> &b);		// Operator = (assignment)
+	template <typename T2>
+	const Mat3<T>& operator =(const Mat3<T2>& b);		// Operator = (assignment/conversion)
 	bool operator ==(const Mat3<T>& b)const;			// Operator ==
 	bool operator !=(const Mat3<T>& b)const;			// Operator !=
 	// Matrix Operators
@@ -145,6 +149,8 @@ public:
 	// Friend declarations
 	template <class T2>
 	friend class Mat2;
+	template <class T2>
+	friend class Mat3;
     template <class T2>
     friend class Mat4;
 };
@@ -164,6 +170,8 @@ public:
     Mat4(const T *data_in);								// Constructor: data array
     // Basic Operators
     const Mat4<T>& operator =(const Mat4<T> &b);		// Operator = (assignment)
+	template <typename T2>
+	const Mat4<T>& operator =(const Mat4<T2>& b);		// Operator = (assignment/conversion)
     bool operator ==(const Mat4<T>& b)const;			// Operator ==
     bool operator !=(const Mat4<T>& b)const;			// Operator !=
     // Matrix Operators
@@ -210,6 +218,7 @@ public:
     // 3D Transformation Matrix Generators
     static Mat4<T> transf(const Mat3<T> &r,const Vec4<T> &t);		// 3D transform matrix from 3D mat + 4D vector
     static Mat4<T> transf(const Mat3<T> &r,const Vec3<T> &t);		// 3D transform matrix from 3D mat + 3D vector
+	static Mat4<T> transf(const Mat3<T>& trf);						// 3D transform matrix from 2D transform matrix (affine)
 #endif
 
 #ifdef QUAT_HPP_
@@ -220,6 +229,8 @@ public:
     // Friend declarations
     template <class T2>
     friend class Mat3;
+	template <class T2>
+	friend class Mat4;
 };
 
 typedef Mat2<float> Mat2f;
@@ -367,12 +378,36 @@ const Mat2<T>& Mat2<T>::operator =(const Mat2<T> &b)
 	memcpy(this,&b,sizeof(*this));
 	return *this;
 }
+// Mat2
+// Operator = (assignment/conversion)
+template <typename T>
+template <typename T2>
+const Mat2<T>& Mat2<T>::operator =(const Mat2<T2>& b)
+{
+	for (unsigned int i = 0; i < 4; i++)
+	{
+		this->v[i] = T(b.v[i]);
+	}
+	return *this;
+}
 // Mat3
 // Operator = (assignment)
 template <typename T>
 const Mat3<T>& Mat3<T>::operator =(const Mat3<T> &b)
 {
 	memcpy(this,&b,sizeof(*this));
+	return *this;
+}
+// Mat3
+// Operator = (assignment/conversion)
+template <typename T>
+template <typename T2>
+const Mat3<T>& Mat3<T>::operator =(const Mat3<T2>& b)
+{
+	for (unsigned int i = 0; i < 9; i++)
+	{
+		this->v[i] = T(b.v[i]);
+	}
 	return *this;
 }
 // Mat4
@@ -382,6 +417,18 @@ const Mat4<T>& Mat4<T>::operator =(const Mat4<T> &b)
 {
     memcpy(this,&b,sizeof(*this));
     return *this;
+}
+// Mat4
+// Operator = (assignment/conversion)
+template <typename T>
+template <typename T2>
+const Mat4<T>& Mat4<T>::operator =(const Mat4<T2>& b)
+{
+	for (unsigned int i = 0; i < 16; i++)
+	{
+		this->v[i] = T(b.v[i]);
+	}
+	return *this;
 }
 
 // Mat2
@@ -1597,6 +1644,21 @@ Mat4<T> Mat4<T>::transf(const Mat3<T> &r,const Vec3<T> &t)
     temp.v[13] = t.y;
     temp.v[14] = t.z;
     return temp;
+}
+
+// Mat4
+// 3D transform matrix from 2D transform matrix (affine)
+template <typename T>
+Mat4<T> Mat4<T>::transf(const Mat3<T>& trf)
+{
+	Mat4<T> temp = Mat4<T>::ident();
+	temp.v[0] = trf.v[0];
+	temp.v[1] = trf.v[1];
+	temp.v[4] = trf.v[3];
+	temp.v[5] = trf.v[4];
+	temp.v[12] = trf.v[6];
+	temp.v[13] = trf.v[7];
+	return temp;
 }
 
 #endif

@@ -30,8 +30,12 @@ public:
     Vec2() : x(0),y(0) {}													// Constructor: initialize all to zeros
     Vec2(const T &bx, const T &by) : x(bx),y(by) {}							// Constructor: x, y
 	Vec2(const Vec2<T> &b) { memcpy(this,&b,sizeof(*this)); }				// Constructor: copy
+	template <typename T2>
+	Vec2(const Vec2<T2>& b) { *this = b; }									// Constructor: copy (conversion)
 	// Basic Operators
 	const Vec2<T>& operator =(const Vec2<T> &b);							// Operator = (assignment)
+	template <typename T2>
+	const Vec2<T>& operator =(const Vec2<T2>& b);							// Operator = (assignment/conversion)
 	T& operator [](unsigned int i) { return v[i]; }							// Operator []
 	const T& operator [](unsigned int i)const { return v[i]; }				// Operator [] const
 	bool operator ==(const Vec2<T> &b)const;								// Operator ==
@@ -79,9 +83,13 @@ public:
     Vec3() : x(0), y(0), z(0) {}											// Constructor: initialize all to zeros
     Vec3(const T &bx, const T &by, const T &bz) : x(bx), y(by), z(bz) {}	// Constructor: x, y, z
 	Vec3(const Vec3<T> &b) { memcpy(this,&b,sizeof(*this)); }				// Constructor: copy
+	template <typename T2>
+	Vec3(const Vec3<T2>& b) { *this = b; }									// Constructor: copy (conversion)
     Vec3(const Vec2<T> &b, const T& s = 0);									// Constructor: 2D vector
 	// Basic Operators
 	const Vec3<T>& operator =(const Vec3<T> &b);							// Operator =
+	template <typename T2>
+	const Vec3<T>& operator =(const Vec3<T2>& b);							// Operator = (assignment/conversion)
 	T& operator [](unsigned int i) { return v[i]; }							// Operator []
 	const T& operator [](unsigned int i)const { return v[i]; }				// Operator [] const
 	bool operator ==(const Vec3<T> &b)const;								// Operator ==
@@ -132,9 +140,13 @@ public:
     Vec4() : x(0),y(0),z(0),w(0) {}											// Constructor: initialize all to zeros
     Vec4(const T &bx,const T &by,const T &bz, const T &bw) : x(bx),y(by),z(bz),w(bw) {}	    // Constructor: x, y, z, w
     Vec4(const Vec4<T> &b) { memcpy(this,&b,sizeof(*this)); }				// Constructor: copy
+	template <typename T2>
+	Vec4(const Vec4<T2>& b) { *this = b; }									// Constructor: copy (conversion)
     Vec4(const Vec3<T> &b,const T& s = 0);									// Constructor: 3D vector
     // Basic Operators
     const Vec4<T>& operator =(const Vec4<T> &b);							// Operator =
+	template <typename T2>
+	const Vec4<T>& operator =(const Vec4<T2>& b);							// Operator = (assignment/conversion)
     T& operator [](unsigned int i) { return v[i]; }							// Operator []
     const T& operator [](unsigned int i)const { return v[i]; }				// Operator [] const
     bool operator ==(const Vec4<T> &b)const;								// Operator ==
@@ -217,12 +229,30 @@ const Vec2<T>& Vec2<T>::operator =(const Vec2<T> &b)
 	x = b.x;	y = b.y;
 	return *this;
 }
+// Vec2
+// Operator = (assignment/conversion)
+template <typename T>
+template <typename T2>
+const Vec2<T>& Vec2<T>::operator =(const Vec2<T2>& b)
+{
+	x = T(b.x);	y = T(b.y);
+	return *this;
+}
 // Vec3
 // Operator =
 template <typename T>
 const Vec3<T>& Vec3<T>::operator =(const Vec3<T> &b)
 {
 	x = b.x;	y = b.y;	z = b.z;
+	return *this;
+}
+// Vec3
+// Operator = (assignment/conversion)
+template <typename T>
+template <typename T2>
+const Vec3<T>& Vec3<T>::operator =(const Vec3<T2>& b)
+{
+	x = T(b.x);	y = T(b.y);	z = T(b.z);
 	return *this;
 }
 // Vec4
@@ -232,6 +262,15 @@ const Vec4<T>& Vec4<T>::operator =(const Vec4<T> &b)
 {
     x = b.x;	y = b.y;	z = b.z;    w = b.w;
     return *this;
+}
+// Vec4
+// Operator = (assignment/conversion)
+template <typename T>
+template <typename T2>
+const Vec4<T>& Vec4<T>::operator =(const Vec4<T2>& b)
+{
+	x = T(b.x);	y = T(b.y);	z = T(b.z);	w = T(b.w);
+	return *this;
 }
 
 // Vec2

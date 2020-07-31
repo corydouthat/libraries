@@ -186,7 +186,6 @@ bool SolveGaussElim(const T *A_mat, const T *b_vec, unsigned int n, T *x_vec)
 }
 
 
-// TODO: UNTESTED
 // SolveMLCP_PGS_Catto() - Solve an MLCP (Mixed Linear Complimentarity Problem) using Projected Gauss-
 //	Seidel method, an extension of Gauss-Seidel. In a computer graphics application, the primary use
 //	case for this method is to solve systems of inequalities related to constraints such as non-
