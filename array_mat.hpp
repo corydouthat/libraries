@@ -319,7 +319,7 @@ T ArrayMat<T>::get(unsigned int col, unsigned int row)const
     if (!isEmpty() && col <= cols && row <= rows)
         return v[col * rows + row];
     else
-        return T(NAN);
+        return (T)(INFINITY * T(0.0));	// NaN
 }
 
 template <typename T>

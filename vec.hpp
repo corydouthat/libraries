@@ -44,6 +44,7 @@ public:
 	Vec2<T> operator +(const Vec2<T> &b)const;								// Operator +
 	Vec2<T> operator -(const Vec2<T> &b)const;								// Operator -
 	Vec2<T> operator -()const;												// Operator - (inverse)
+	T operator %(const Vec2<T>& b)const;								// Cross Product Operator %
 	T operator *(const Vec2<T> &b)const;									// Dot Product Operator *
 	const Vec2<T>& operator +=(const Vec2<T> &b) { return *this = *this + b; }	// Operator +=
 	const Vec2<T>& operator -=(const Vec2<T> &b) { return *this = *this - b; }	// Operator -=
@@ -364,15 +365,22 @@ Vec4<T> Vec4<T>::operator -()const
     return Vec4<T>(-x,-y,-z,-w);
 }
 
-// Vec3 (only)
+// Vec2 (special)
+template <typename T>
+T Vec2<T>::operator %(const Vec2<T>& b)const
+{
+	return x * b.y - y * b.x;	// equivalent of 3D z result
+}
+
+// Vec3
 // Cross Product Operator %
 template <typename T>
 Vec3<T> Vec3<T>::operator %(const Vec3<T> &b)const
 {
 	return Vec3<T>(
-		y * b.z - z * b.y,  //x component result
-		z * b.x - x * b.z,  //y component result
-		x * b.y - y * b.x); //z component result
+		y * b.z - z * b.y,		// x component result
+		z * b.x - x * b.z,		// y component result
+		x * b.y - y * b.x);		// z component result
 }
 
 // Vec2
