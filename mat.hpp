@@ -74,6 +74,8 @@ public:
 	// Friend declarations
 	template <class T2>
 	friend class Mat2;
+	template <class T2>
+	friend class Mat3;
 };
 
 template <typename T = float>
@@ -140,6 +142,7 @@ public:
 	static Mat3<T> scale(const Vec3<T> &t);							// 3D scale matrix from 3D vector
 	static Mat3<T> transf(const Mat2<T> &r,const Vec3<T> &t);		// 2D transform matrix from 2D mat + 3D vector
 	static Mat3<T> transf(const Mat2<T> &r,const Vec2<T> &t);		// 2D transform matrix from 2D mat + 2D vector
+	static Mat3<T> transf(T theta, Vec2<T>& t);						// 2D transform matrix from rotation and translation
 #endif
 
 #ifdef QUAT_HPP_
@@ -1644,6 +1647,13 @@ Mat4<T> Mat4<T>::transf(const Mat3<T> &r,const Vec3<T> &t)
     temp.v[13] = t.y;
     temp.v[14] = t.z;
     return temp;
+}
+// Mat3
+// Static 2D Transformation Matrix Generator: rotation + 2D vector (last element 1)
+template <typename T>
+Mat3<T> Mat3<T>::transf(T theta, Vec2<T>& t)
+{
+	return transf(theta, t.x, t.y);
 }
 
 // Mat4
