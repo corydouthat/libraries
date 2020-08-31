@@ -64,6 +64,7 @@ public:
 	void removeIndex(unsigned int index);									// Delete item at index
 	void remove(const phListNode<T> *node);									// Delete specified node
 
+	// TODO: get functions throw exception if list is empty, but not sure how to fix 
 	T& getHead() { return head->data; }										// Return reference to data at head
 	T& getCurrent() { return current->data; }								// Return reference to data at current
 	T& getTail() { return tail->data; }										// Return reference to data at tail
