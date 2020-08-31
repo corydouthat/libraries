@@ -38,15 +38,15 @@ private:
 	unsigned int count;
 	phListNode<T> *head;						// Pointer to head of list
 	phListNode<T> *tail;						// Pointer to tail of list
-	phListNode<T> *current;					// Pointer to current item of interest
+	phListNode<T> *current;						// Pointer to current item of interest
 public:
 	// CONSTRUCTORS AND DESTRUCTOR
-	phLinkedList() : head(0),tail(0),current(0),count(0) {}	// Constructor: default
+	phLinkedList() : head(0),tail(0),current(0),count(0) {}		// Constructor: default
 	phLinkedList(const phLinkedList<T> &copy);					// Constructor: copy
-	~phLinkedList() {clear();}								// Destructor
+	~phLinkedList() {clear();}									// Destructor
 
 	// OPERATORS
-	const phLinkedList<T>& operator =(const phLinkedList<T> &b);				// Operator =
+	const phLinkedList<T>& operator =(const phLinkedList<T> &b);			// Operator =
 	T& operator [](unsigned int i) { return getIndex(i); }					// Operator []
 
 	// CHECK FUNCTIONS
@@ -61,6 +61,7 @@ public:
 	void removeHead();														// Delete item at head and set head to next item
 	void removeTail();														// Delete item at tail
 	void removeCurrent();													// Delete item at current pointer
+	void removeIndex(unsigned int index);									// Delete item at index
 	void remove(const phListNode<T> *node);									// Delete specified node
 
 	T& getHead() { return head->data; }										// Return reference to data at head
@@ -78,8 +79,10 @@ public:
 
 	// POINTER FUNCTIONS
 	bool moveNext();														// Set current pointer to the next item
+	bool movePrev();														// Set current pointer to the prev item
 	bool moveHead();														// Set current pointer to the head item
 	bool moveTail();					                                    // Set current pointer to the tail item
+	bool moveIndex(unsigned int index);										// Set current pointer to the index item
 	const phListNode<T>* getCurrentPointer()const { return current; }		// Get constant pointer to current node
 	const phListNode<T>* getTailPointer()const { return tail; }				// Get constant pointer to tail node
 };
@@ -233,6 +236,26 @@ void phLinkedList<T>::removeCurrent()
 	remove(current);
 }
 
+// Delete item at index
+template <typename T>
+void phLinkedList<T>::removeIndex(unsigned int index)
+{
+	if (index >= count)
+		return;
+
+	phListNode<T>* temp = current;
+
+	moveIndex(index);
+
+	if (current == temp)
+		removeCurrent()
+	else
+	{
+		removeCurrent();
+		current = temp;
+	}
+}
+
 // Delete specific node
 template <typename T>
 void phLinkedList<T>::remove(const phListNode<T> *node)
@@ -259,43 +282,29 @@ void phLinkedList<T>::remove(const phListNode<T> *node)
 template <typename T>
 T& phLinkedList<T>::getIndex(unsigned int index)
 {
-	if (index <= count / 2)
+	phListNode<T>* temp = current;
+	T* temp_data;
+
+	if (moveIndex(index))
 	{
-		phListNode<T> *temp;
-		temp = head;
-		for (unsigned int i = 1; i <= index; i++)
-			temp = temp->next;
-		return temp->data;
+		temp_data = &(getCurrent());
+		current = temp;
+		return *temp_data;
 	}
 	else
-	{
-		phListNode<T> *temp;
-		temp = tail;
-		for (unsigned int i = count - 1; i > index; i--)
-			temp = temp->prev;
-		return temp->data;
-	}
+		return tail->data;	// TODO: not ideal
 }
 
 // Set data at index from head
 template <typename T>
 void phLinkedList<T>::setIndex(unsigned int index,const T &d)
 {
-	if (index <= count / 2)
+	phListNode<T>* temp = current;
+
+	if (moveIndex(index))
 	{
-		phListNode<T> *temp;
-		temp = head;
-		for (int i = 1; i <= index; i++)
-			temp = temp->next;
-		temp->data = d;
-	}
-	else
-	{
-		phListNode<T> *temp;
-		temp = tail;
-		for (int i = count - 1; i > index; i--)
-			temp = temp->prev;
-		temp->data = d;
+		setCurrent(d);
+		current = temp;
 	}
 }
 
@@ -318,6 +327,20 @@ bool phLinkedList<T>::moveNext()
 	else
 	{
 		current = current->next;
+		return true;
+	}
+}
+
+// Set current pointer to the prev item
+// Returns:	true if prev is valid, false if at head
+template <typename T>
+bool phLinkedList<T>::movePrev()
+{
+	if (current == head)
+		return false;
+	else
+	{
+		current = current->prev;
 		return true;
 	}
 }
@@ -346,6 +369,32 @@ bool phLinkedList<T>::moveTail()
 	else
 	{
 		current = tail;
+		return true;
+	}
+}
+
+// Set current pointer to the index item
+// Returns:	true if index is valid, false if not
+template <typename T>
+bool phLinkedList<T>::moveIndex(unsigned int index)
+{
+	if (index >= count)
+		return false;
+	else
+	{
+		if (index <= count / 2)
+		{
+			moveHead();
+			for (unsigned int i = 0; i < index; i++)
+				moveNext();
+		}
+		else
+		{
+			moveTail();
+			for (unsigned int i = count - 1; i > index; i--)
+				movePrev();
+		}
+
 		return true;
 	}
 }

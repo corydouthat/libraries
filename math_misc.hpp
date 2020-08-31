@@ -17,13 +17,12 @@
 #include "mat.hpp"
 #include "array_mat.hpp"
 
-
 // Determinant() - Calculate the determinant of an arbitrary-sized square matrix
 // Inputs:  mat = matrix data array
 //          size = matrix size (width of square matrix)
 // Return:  determinant result
 template <typename T>
-T Determinant(const T *mat,unsigned int size)
+T Determinant(const T *mat, unsigned int size)
 {
     if (size < 2)
         return (T)0;
@@ -64,7 +63,7 @@ T Determinant(const T *mat,unsigned int size)
             det -= mat[i*size] * Determinant(sub_mat,size - 1);
     }
 
-    delete sub_mat;
+    delete[] sub_mat;
 
     return det;
 }
@@ -145,7 +144,7 @@ bool SolveGaussElim(const T *A_mat, const T *b_vec, unsigned int n, T *x_vec)
 		// Check for zero pivot (no solution)
 		if (A[r*n + row_index[r]] == (T)0)
 		{
-			delete A; delete b; delete row_index;
+			delete[] A; delete[] b; delete[] row_index;
 			return false;
 		}
 
@@ -181,171 +180,8 @@ bool SolveGaussElim(const T *A_mat, const T *b_vec, unsigned int n, T *x_vec)
 		x_vec[x] /= A[x*n + row_index[x]];
 	}
 
-	delete A; delete b; delete row_index;
+	delete[] A; delete[] b; delete[] row_index;
 	return true;
-}
-
-
-// SolveMLCP_PGS_Catto() - Solve an MLCP (Mixed Linear Complimentarity Problem) using Projected Gauss-
-//	Seidel method, an extension of Gauss-Seidel. In a computer graphics application, the primary use
-//	case for this method is to solve systems of inequalities related to constraints such as non-
-//	penetrating collisions, joints, etc. This implementation has been written with that particular
-//	case in mind and is not be a fully generalized MLCP / PGS algorithm (though functionally the same).
-//	This algorithm assumes constraints only exist between pairs of bodies, so J and B are stored in a
-//	"sparse" format with fixed number of columns based on body dimensionality (i.e. n_d). This requires
-//	J_map to decode.
-// References: https://www.toptal.com/game/video-game-physics-part-iii-constrained-rigid-body-simulation
-//	Erin Catto GDC 2005 https://code.google.com/archive/p/box2d/downloads
-// Format:	JBλ = η or JBx = z
-// Note: All matrix arrays stored in column major order
-// Inputs:  J_sp = [s by 2*n_d] 
-//					Jacobian matrix of constraint functions (sparse)
-//			J_map = [s by 2] 
-//					Mapping of sparse jacobian matrix bodies (0 indexed)
-//					Note: Each element(i,j) is the index of a rigid body. By convention, if a constraint
-//					is between a single rigid body and ground, then (i,0) = 0 and the corresponding 
-//					J(i,0) is zero.
-//			B_sp = [2*n_d by s] 
-//					B term: M(inv)*J(transpose) (sparse)
-//					M is a mass and inertia diagonal matrix of n*n_d by n*n_d
-//					Use J_map for indexing
-//			z_vec (η) = [s]
-//					z(η) term: (1/dt)*ζ - J((1/dt)*V1 + M(inv)*F_ext)
-//					ζ is a constraint bias factor for stabilization
-//					V1 is the initial (previous) velocity
-//					F_ext is the external force acting on a body
-//			x_min_vec (λ-) = [s] 
-//					Minimum bound - use std inf (1.0 / 0.0) or max value to represent positive infinity
-//			x_max_vec (λ+) = [s]
-//					Maximum bound - use std -inf (-1.0 / 0.0) or lowest value to represent negative infinity
-//			s = number of constraints
-//			n = number of bodies
-//			n_d = number of elements per body (i.e. x,y,theta; x,y,z,quat(a,b,c); etc)
-//			max_iter = maximum number of iterations
-//			x0_vec_in (λ0) [s]
-//					Warm start - initial guess at λ, usually result from the previous frame
-// Return:  x_vec (λ) = [s]
-//					Solution of unknowns
-//					Note: x_vec may be initialized with a best-guess (e.g. results from prev. frame) 
-//					to warm-start the algorithm.
-//          (return) boolean specifying whether the operation was successful or not
-template <typename T>
-bool SolveMLCP_PGS_Catto(const ArrayMat<T> &J_sp, const ArrayMat<unsigned int> &J_map, const ArrayMat<T> &B_sp, 
-					const ArrayMat<T> &z_vec, const ArrayMat<T> &x_min_vec, const ArrayMat<T> &x_max_vec, 
-					unsigned int s, unsigned int n, unsigned int n_d, unsigned int max_iter, 
-					const ArrayMat<T> &x0_vec_in, ArrayMat<T> *x_vec)
-{
-	// TO-DO:
-	// Add early termination checks - less than max error, etc
-	// Check for valid pointers, ints, etc
-	// Check max iterations for <= 0 and do something with it
-	// Check for positive semi-definite (if necessary), i.e. the JB matrix
-
-	// Work Variables
-	ArrayMat<T> a(n * n_d, 1, 0);	// Catto work variable
-	ArrayMat<T> d(s, 1, 0);			// Catto work variable
-	ArrayMat<T> temp1(n_d, 1, 0);	// Temp array vector
-	ArrayMat<T> temp3(n_d, 1, 0);	// Temp array vector
-	ArrayMat<T> temp2(n_d, 1, 0);	// Temp array vector
-	ArrayMat<T> temp4(n_d, 1, 0);	// Temp array vector
-	unsigned int b1;				// Jmap object 1 index
-	unsigned int b2;				// Jmap object 2 index
-	ArrayMat<T> x_delta(s, 1, 0);	// Temporary x(λ) delta
-	ArrayMat<T> a_b1(n_d, 1, 0);	// Temp array vector
-	ArrayMat<T> a_b2(n_d, 1, 0);	// Temp array vector
-	ArrayMat<T>* x0_vec;
-
-	// Copy x0_vec_in
-	if (!x0_vec_in.isEmpty())
-		x0_vec = new ArrayMat<T>(x0_vec_in);
-	else
-		x0_vec = new ArrayMat<T>(s, 1, 0);
-
-	// Initialize / Warm Start x
-	*x_vec = *x0_vec;
-
-	// Initialize work variable a
-	// Generate full B matrix - TODO: not efficient...
-	ArrayMat<T> B(n * n_d, s, 0);
-	for (unsigned int j = 0; j < s; j++)
-	{
-		for (unsigned int i = 0; i < 2; i++)
-		{
-			for (unsigned int k = 0; k < n_d; k++)
-			{
-				B.set(j, J_map.get(i, j) * n_d + k, B_sp.get(j, i * n_d + k));
-			}
-		}
-	}
-	a = B * *x_vec;
-
-	// Initialize work variable d
-	// d(i) = dot(Jsp(i,0),Bsp(0,i)) + dot(Jsp(i,1),Bsp(1,i))
-	for (unsigned int i = 0; i < s; i++)
-	{
-		for (unsigned int j = 0; j < n_d; j++)
-		{
-			// Get J_sp(i,0) (i.e. first n_d-length half of row)
-			temp1.set(0, j, J_sp.get(j, i));
-			// Get J_sp(i,1) (i.e. second n_d-length half of row)
-			temp3.set(0, j, J_sp.get(j + n_d, i));
-			// Get B_sp(0,i) (i.e. first n_d-length half of col)
-			temp2.set(0, j, B_sp.get(i, j));
-			// Get B_sp(1,i) (i.e. second n_d-length half of col)
-			temp4.set(0, j, B_sp.get(i, j + n_d));
-		}
-		d.set(0, i, ArrayMat<T>::dotProduct(temp1, temp2) + ArrayMat<T>::dotProduct(temp3, temp4));
-	}
-
-	// Main Iterative Loop
-	for (unsigned int iter = 1; iter <= max_iter; iter++)
-	{
-		for (unsigned int i = 0; i < s; i++)
-		{
-			b1 = J_map.get(0, i);	// Object 1 index
-			b2 = J_map.get(1, i);	// Object 2 index
-
-			for (unsigned int j = 0; j < n_d; j++)
-			{
-				// Get J_sp(i,0) (i.e. first n_d-length half of row)
-				temp1.set(0, j, J_sp.get(j, i));
-				// Get J_sp(i,1) (i.e. second n_d-length half of row)
-				temp3.set(0, j, J_sp.get(j + n_d, i));
-				// Get B_sp(0,i) (i.e. first n_d-length half of col)
-				temp2.set(0, j, B_sp.get(i, j));
-				// Get B_sp(1,i) (i.e. second n_d-length half of col)
-				temp4.set(0, j, B_sp.get(i, j + n_d));
-
-				// Get a(b1)
-				a_b1.set(0, j, a.get(0, b1 * n_d + j));
-				// Get a(b2)
-				a_b2.set(0, j, a.get(0, b2 * n_d + j));
-			}
-
-			// Tentative x_delta
-			if (d.get(0, i) != T(0))
-				x_delta.set(0, i, (z_vec.get(0, i) - ArrayMat<T>::dotProduct(temp1, a_b1) - ArrayMat<T>::dotProduct(temp3, a_b2)) / d.get(0, i));
-			else
-				x_delta.set(0, i, 0);	// TODO: not sure if this is valid. Might be okay if numerator is also zero...
-
-			// Test against constraints
-			// Save last iteration result (same on first loop)
-			x0_vec->set(0, i, x_vec->get(0, i));
-			// Check min/max
-			x_vec->set(0, i, max(x_min_vec.get(0, i), min(x0_vec->get(0, i) + x_delta.get(0, i), x_max_vec.get(0, i))));
-			// Final delta
-			x_delta.set(0, i, x_vec->get(0, i) - x0_vec->get(0, i));
-
-			// Update work variable a
-			for (unsigned int j = 0; j < n_d; j++)
-			{
-				a.set(0, b1 * n_d + j, a_b1.get(0, j) + x_delta.get(0, i) * temp2.get(0, j));
-				a.set(0, b2 * n_d + j, a_b2.get(0, j) + x_delta.get(0, i) * temp4.get(0, j));
-			}
-		}
-	}
-
-	return true;	// TODO - check for issues
 }
 
 #endif

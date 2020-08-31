@@ -14,6 +14,13 @@
 #include <cmath>
 #include <cstring>
 
+template <typename T>
+class Vec2;
+template <typename T>
+class Vec3;
+template <typename T>
+class Vec4;
+
 template <typename T = float>
 class Vec2
 {
@@ -29,7 +36,8 @@ public:
 	// Constructors
     Vec2() : x(0),y(0) {}													// Constructor: initialize all to zeros
     Vec2(const T &bx, const T &by) : x(bx),y(by) {}							// Constructor: x, y
-	Vec2(const Vec2<T> &b) { memcpy(this,&b,sizeof(*this)); }				// Constructor: copy
+	Vec2(const Vec2<T>& b) { memcpy(this, &b, sizeof(*this)); }				// Constructor: copy
+	Vec2(const Vec3<T>& b) { memcpy(this, &b, sizeof(*this)); }				// Constructor: copy (downsize)
 	template <typename T2>
 	Vec2(const Vec2<T2>& b) { *this = b; }									// Constructor: copy (conversion)
 	// Basic Operators
