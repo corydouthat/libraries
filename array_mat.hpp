@@ -79,6 +79,10 @@ public:
 
     // Static Member Functions
     static T dotProduct(const ArrayMat<T>& a, const ArrayMat<T>& b);
+    static bool multSparseRow(const ArrayMat<T>& a_sp, const ArrayMat<int>& a_map, const ArrayMat<T>& b,
+        unsigned int n, ArrayMat<T>* result);
+    //static bool multSparseCol(const ArrayMat<T>& a_sp, const ArrayMat<T>& a_map, const ArrayMat<T>& b,
+    //    unsigned int n, ArrayMat<T>* result);
 
     // Discrete Matrix (Mat2, Mat3, Mat4) Functions
 #ifdef MAT_HPP_
@@ -407,6 +411,61 @@ T ArrayMat<T>::dotProduct(const ArrayMat<T>& a, const ArrayMat<T>& b)
     }
     else
         return NAN;
+}
+
+// multSpareseRow()
+// Input:   a_sp = sparse matrix (rows)
+//          a_map = sparse matrix map (rows)
+//          b = non-sparse matrix
+//          n = number of mapping indices per sparse matrix column (usually two)
+// Return:  resuls = pointer to result matrix
+//          bool - success yes/no
+template <typename T>
+bool ArrayMat<T>::multSparseRow(const ArrayMat<T>& a_sp, const ArrayMat<int>& a_map, const ArrayMat<T>& b,
+    unsigned int n, ArrayMat<T>* result)
+{
+    if (a_sp.isEmpty() || a_map.isEmpty() || b.isEmpty() || n == 0 || !result)
+        return false;
+
+    if (a_map.getNumRows() != n || a_sp.getNumCols() != b.getNumRows() || a_sp.getNumRows() % n != 0)
+        return false;
+
+    int index;
+    int n_d = a_sp.getNumRows() / n;
+
+    // TODO: assume rows/columns of result matrix are correct. Don't know exact number of rows
+    //if (result->getNumRows() != ??? || result->getNumCols() != b.getNumCols())
+    //    result->allocateZero(a_sp.getNumRows() * n, b.getNumCols());
+    //else
+    //    memset(result->v, 0, result->getNumRows() * result->getNumCols() * sizeof(T));
+
+    // B Row
+    for (unsigned int i = 0; i < b.getNumRows(); i++)
+    {
+        // B Column
+        for (unsigned int j = 0; j < b.getNumCols(); j++)
+        {
+            // Mapping index for current A column (B Row)
+            for (unsigned int ind = 0; ind < n; ind++)
+            {
+                index = a_map.get(i, ind);
+
+                // Iterate through sub-variables (a_sp.rows / n)
+                if (index >= 0)
+                {
+                    if (index > result->getNumRows() * n_d)
+                        return false;
+
+                    for (unsigned int k = 0; k < n_d; k++)
+                    {
+                        result->set(j, index * n_d + k, result->get(j, index * n_d + k) + a_sp.get(i, ind * n + k) * b.get(j, i));
+                    }
+                }
+            }
+        }
+    }
+
+    return true;
 }
 
 
