@@ -81,8 +81,8 @@ public:
     static T dotProduct(const ArrayMat<T>& a, const ArrayMat<T>& b);
     static bool multSparseRow(const ArrayMat<T>& a_sp, const ArrayMat<int>& a_map, const ArrayMat<T>& b,
         unsigned int n, ArrayMat<T>* result);
-    //static bool multSparseCol(const ArrayMat<T>& a_sp, const ArrayMat<T>& a_map, const ArrayMat<T>& b,
-    //    unsigned int n, ArrayMat<T>* result);
+    static bool multSparseCol(const ArrayMat<T>& a_sp, const ArrayMat<int>& a_map, const ArrayMat<T>& b,
+        unsigned int n, ArrayMat<T>* result);
 
     // Discrete Matrix (Mat2, Mat3, Mat4) Functions
 #ifdef MAT_HPP_
@@ -414,6 +414,7 @@ T ArrayMat<T>::dotProduct(const ArrayMat<T>& a, const ArrayMat<T>& b)
 }
 
 // multSpareseRow()
+// Y (return) = A_sp * B
 // Input:   a_sp = sparse matrix (rows)
 //          a_map = sparse matrix map (rows)
 //          b = non-sparse matrix
@@ -435,7 +436,7 @@ bool ArrayMat<T>::multSparseRow(const ArrayMat<T>& a_sp, const ArrayMat<int>& a_
 
     // TODO: assume rows/columns of result matrix are correct. Don't know exact number of rows
     //if (result->getNumRows() != ??? || result->getNumCols() != b.getNumCols())
-    //    result->allocateZero(a_sp.getNumRows() * n, b.getNumCols());
+    //    result->allocateZero(???, b.getNumCols());
     //else
     //    memset(result->v, 0, result->getNumRows() * result->getNumCols() * sizeof(T));
 
@@ -458,7 +459,7 @@ bool ArrayMat<T>::multSparseRow(const ArrayMat<T>& a_sp, const ArrayMat<int>& a_
 
                     for (unsigned int k = 0; k < n_d; k++)
                     {
-                        result->set(j, index * n_d + k, result->get(j, index * n_d + k) + a_sp.get(i, ind * n + k) * b.get(j, i));
+                        result->set(j, index * n_d + k, result->get(j, index * n_d + k) + a_sp.get(i, ind * n_d + k) * b.get(j, i));
                     }
                 }
             }
@@ -468,6 +469,57 @@ bool ArrayMat<T>::multSparseRow(const ArrayMat<T>& a_sp, const ArrayMat<int>& a_
     return true;
 }
 
+// multSpareseCol()
+// Y (return) = A_sp * B
+// Input:   a_sp = sparse matrix (columns)
+//          a_map = sparse matrix map (columns)
+//          b = non-sparse matrix
+//          n = number of mapping indices per sparse matrix column (usually two)
+// Return:  resuls = pointer to result matrix
+//          bool - success yes/no
+template <typename T>
+bool ArrayMat<T>::multSparseCol(const ArrayMat<T>& a_sp, const ArrayMat<int>& a_map, const ArrayMat<T>& b,
+    unsigned int n, ArrayMat<T>* result)
+{
+    if (a_sp.isEmpty() || a_map.isEmpty() || b.isEmpty() || n == 0 || !result)
+        return false;
+
+    if (a_map.getNumCols() != n || a_sp.getNumCols() % n != 0)
+        return false;
+
+    int index;
+    int n_d = a_sp.getNumCols() / n;
+
+    if (result->getNumRows() != a_sp.getNumRows() || result->getNumCols() != b.getNumCols())
+        result->allocateZero(a_sp.getNumRows(), b.getNumCols());
+    else
+        memset(result->v, 0, result->getNumRows() * result->getNumCols() * sizeof(T));
+
+    // A Row
+    for (unsigned int i = 0; i < a_sp.getNumRows(); i++)
+    {
+        // A Col/Index
+        for (unsigned int ind = 0; ind < n; ind++)
+        {
+            index = a_map.get(ind, i);
+
+            if (index >= 0)
+            {
+                // B Column
+                for (unsigned int j = 0; j < b.getNumCols(); j++)
+                {
+                    // Iterate through sub-variables (a_sp.cols / n) (i.e. part of B rows)
+                    for (unsigned int k = 0; k < n_d; k++)
+                    {
+                        result->set(j, i, result->get(j, i) + a_sp.get(ind * n_d + k, i) * b.get(j, index * n_d + k));
+                    }
+                }
+            }
+        }
+    }
+
+    return true;
+}
 
 // DISCRETE MATRIX (MAT2, MAT3, MAT4) FUNCTIONS
 // *****************************************************************************************************************************
