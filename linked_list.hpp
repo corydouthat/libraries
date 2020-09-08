@@ -57,6 +57,7 @@ public:
 	T* insertHead(const T &item);											// Add an item at the head
 	T* insertTail(const T &item);											// Add an item at the tail
 	T* insertCurrent(const T &item);										// Add an item after the current node
+	T* insertSorted(const T& item, bool order, bool dup);					// Add an item to a sorted list
 
 	void removeHead();														// Delete item at head and set head to next item
 	void removeTail();														// Delete item at tail
@@ -166,7 +167,7 @@ T* phLinkedList<T>::insertCurrent(const T &item)
 		return insertTail(item);
 	else
 	{
-		phListNode<T> *temp;
+		phListNode<T>* temp;
 		temp = new phListNode<T>(item);
 		temp->next = current->next;
 		current->next->prev = temp;
@@ -174,6 +175,60 @@ T* phLinkedList<T>::insertCurrent(const T &item)
 		current->next = temp;
 		count++;
 		return &(temp->data);
+	}
+}
+
+// Add an item to a sorted list
+// order = false for ascending, true for descending
+// dup = false for don't allow duplicates, true for allow
+// TODO: could be faster if starting node/index could be provided
+// TODO: could be faster with binary-style search
+template <typename T>
+T* phLinkedList<T>::insertSorted(const T& item, bool order, bool dup)
+{
+	if (isEmpty())
+		return insertTail(item);
+	else
+	{
+		if (order == false) // Ascending
+		{
+			if (current->data <= item)
+				moveTail();
+			do
+			{
+				if (current->data < item)
+					return insertCurrent(item);
+				else if (current->data == item)
+				{
+					if (dup)
+						return insertCurrent(item);
+					else
+						return nullptr;
+				}
+			} while (movePrev());
+			// Reaching the end implies head->data is > item
+			return insertHead(item);
+		}
+		// TODO: descending option untested
+		else	// Descending
+		{
+			if (current->data >= item)
+				moveTail();
+			do
+			{
+				if (current->data > item)
+					return insertCurrent(item);
+				else if (current->data == item)
+				{
+					if (dup)
+						return insertCurrent(item);
+					else
+						return nullptr;
+				}
+			} while (movePrev());
+			// Reaching the end implies head->data is < item
+			return insertHead(item);
+		}
 	}
 }
 
