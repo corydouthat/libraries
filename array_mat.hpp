@@ -301,12 +301,15 @@ void ArrayMat<T>::clear()
 template <typename T>
 void ArrayMat<T>::allocate(unsigned int r, unsigned int c)
 {
-    clear();
+    if (!v || rows != r || c != cols)
+    {
+        clear();
 
-    rows = r;
-    cols = c;
-    
-    v = new T[cols * rows];  
+        rows = r;
+        cols = c;
+
+        v = new T[cols * rows];
+    }
 }
 
 // Allocate memory (to zeros)
