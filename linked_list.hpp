@@ -50,7 +50,7 @@ public:
 	T& operator [](unsigned int i) { return getIndex(i); }					// Operator []
 
 	// CHECK FUNCTIONS
-	bool isEmpty()const { return head==NULL; }								// Empty check
+	bool isEmpty()const { return head==nullptr; }								// Empty check
 	unsigned int size()const { return count; }								// Size
 
 	// DATA CONTROL FUNCTIONS
@@ -236,13 +236,13 @@ T* phLinkedList<T>::insertSorted(const T& item, bool order, bool dup)
 template <typename T>
 void phLinkedList<T>::removeHead()
 {
-	if (head == NULL)
+	if (head == nullptr)
 		return;
 
 	if (head == tail)
 	{
 		delete head;
-		head = tail = current = NULL;
+		head = tail = current = nullptr;
 		count = 0;
 	}
 	else
@@ -252,7 +252,7 @@ void phLinkedList<T>::removeHead()
 		phListNode<T> *temp = head->next;
 		delete head;
 		head = temp;
-		head->prev = NULL;
+		head->prev = nullptr;
 		count--;
 	}
 }
@@ -261,13 +261,13 @@ void phLinkedList<T>::removeHead()
 template <typename T>
 void phLinkedList<T>::removeTail()
 {
-	if (head == NULL)
+	if (head == nullptr)
 		return;
 
 	if (head == tail)
 	{
 		delete tail;
-		head = tail = current = NULL;
+		head = tail = current = nullptr;
 		count = 0;
 	}
 	else
@@ -277,7 +277,7 @@ void phLinkedList<T>::removeTail()
 		phListNode<T> *temp = tail->prev;
 		delete tail;
 		tail = temp;
-		tail->next = NULL;
+		tail->next = nullptr;
 		count--;
 	}
 }
@@ -286,7 +286,7 @@ void phLinkedList<T>::removeTail()
 template <typename T>
 void phLinkedList<T>::removeCurrent()
 {
-	if (head == NULL)
+	if (head == nullptr)
 		return;
 
 	remove(current);
@@ -316,7 +316,7 @@ void phLinkedList<T>::removeIndex(unsigned int index)
 template <typename T>
 void phLinkedList<T>::remove(const phListNode<T> *node)
 {
-	if (head == NULL)
+	if (head == nullptr)
 		return;
 
 	if (node == head)
