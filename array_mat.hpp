@@ -383,7 +383,7 @@ ArrayMat<T> ArrayMat<T>::invDiag()const
         y.set(i, i, T(1) / get(i, i));
     }
 
-    return *y;
+    return y;
 }
 
 

@@ -1,5 +1,5 @@
 // *****************************************************************************************************************************
-// linkedlist.hpp
+// linked_list.hpp
 // Linked List Template Class
 // Double-Linked
 // Adapted from class written in 2007 at UMKC
