@@ -98,6 +98,8 @@ bool SolveCramer(const T *A_mat,const T *b_vec,unsigned int n,T *x_vec)
         // Copy regular values back into column i
         memcpy(&Ai[i * n],&A_mat[i * n],n * sizeof(T));
     }
+
+	delete Ai;
     return true;
 }
 

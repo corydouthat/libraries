@@ -12,7 +12,7 @@
 #include <cstdlib>
 
 template <typename T>
-class phArrayList
+class ArrayList
 {
 private:
 	T* data;
@@ -20,12 +20,13 @@ private:
 	unsigned int size;
 public:
 	// CONSTRUCTORS AND DESTRUCTOR
-	phArrayList() : data(nullptr), count(0), size(0) {}			// Constructor: default
-	phArrayList(const phArrayList<T>& copy) : phArrayList() { *this = copy; }	// Constructor: copy
-	~phArrayList() { free(); }									// Destructor
+	ArrayList() : data(nullptr), count(0), size(0) {}			// Constructor: default
+	ArrayList(unsigned int c) : ArrayList() { allocate(c); }	// Constructor: w/ allocation
+	ArrayList(const ArrayList<T>& copy) : ArrayList() { *this = copy; }	// Constructor: copy
+	~ArrayList() { free(); }									// Destructor
 
 	// OPERATORS
-	const phArrayList<T>& operator =(const phArrayList<T> &b);	// Operator =
+	const ArrayList<T>& operator =(const ArrayList<T> &b);	// Operator =
 	T& operator [](unsigned int i) { return data[i]; }			// Operator []
 	const T& operator [](unsigned int i)const { return data[i]; }	// Operator [] (const)
 
@@ -45,7 +46,7 @@ public:
 	bool insert(unsigned int index, const T& item);				// Insert item at index
 	unsigned int insertSorted(const T& item, bool order, bool dup);	// Insert item into sorted list
 
-	void copyData(const phArrayList<T>& b);						// Copy data, only allocate if needed
+	void copyData(const ArrayList<T>& b);						// Copy data, only allocate if needed
 
 	unsigned int push(const T& item) { return insert(count, item); }	// Push item on end
 	bool pop() { return remove(count - 1); }					// Pop/remove end item
@@ -62,7 +63,7 @@ public:
 
 // Operator =
 template <typename T>
-const phArrayList<T>& phArrayList<T>::operator =(const phArrayList<T>& b)
+const ArrayList<T>& ArrayList<T>::operator =(const ArrayList<T>& b)
 {
 	clear();
 
@@ -79,7 +80,7 @@ const phArrayList<T>& phArrayList<T>::operator =(const phArrayList<T>& b)
 
 // Update list count
 template <typename T>
-bool phArrayList<T>::updateCount(unsigned int new_count)
+bool ArrayList<T>::updateCount(unsigned int new_count)
 {
 	if (new_count > count)
 	{
@@ -93,7 +94,7 @@ bool phArrayList<T>::updateCount(unsigned int new_count)
 
 // Re-allocate to new size
 template <typename T>
-bool phArrayList<T>::allocate(unsigned int new_size)
+bool ArrayList<T>::allocate(unsigned int new_size)
 {
 	if (new_size <= size)
 		return false;
@@ -140,7 +141,7 @@ bool phArrayList<T>::allocate(unsigned int new_size)
 
 // Set value at index
 template <typename T>
-bool phArrayList<T>::set(unsigned int index, const T& item)
+bool ArrayList<T>::set(unsigned int index, const T& item)
 {
 	if (index >= count)
 		return false;
@@ -153,7 +154,7 @@ bool phArrayList<T>::set(unsigned int index, const T& item)
 
 // Set value of all
 template <typename T>
-bool phArrayList<T>::setAll(const T& item)
+bool ArrayList<T>::setAll(const T& item)
 {
 	if (count == 0)
 		return false;
@@ -166,7 +167,7 @@ bool phArrayList<T>::setAll(const T& item)
 // Insert item at index
 // Push other items up the list
 template <typename T>
-bool phArrayList<T>::insert(unsigned int index, const T& item)
+bool ArrayList<T>::insert(unsigned int index, const T& item)
 {
 	// Highest insert allowed is right after last item
 	if (index > count)
@@ -200,7 +201,7 @@ bool phArrayList<T>::insert(unsigned int index, const T& item)
 // Insert item into sorted list
 // List must be pre-sorted (TODO: add bool sorted variable)
 template <typename T>
-unsigned int phArrayList<T>::insertSorted(const T& item, bool order, bool dup)
+unsigned int ArrayList<T>::insertSorted(const T& item, bool order, bool dup)
 {
 	if (isEmpty())
 		insert(0, item);
@@ -249,7 +250,7 @@ unsigned int phArrayList<T>::insertSorted(const T& item, bool order, bool dup)
 
 // Copy data, only allocate if needed
 template <typename T>
-void phArrayList<T>::copyData(const phArrayList<T>& b)
+void ArrayList<T>::copyData(const ArrayList<T>& b)
 {
 	clear();
 
@@ -265,7 +266,7 @@ void phArrayList<T>::copyData(const phArrayList<T>& b)
 
 // Remove item at index
 template <typename T>
-bool phArrayList<T>::remove(unsigned int index)
+bool ArrayList<T>::remove(unsigned int index)
 {
 	if (index => count)
 		return false;	// Invalid index
@@ -282,7 +283,7 @@ bool phArrayList<T>::remove(unsigned int index)
 
 // Clear and de-allocate memory
 template <typename T>
-void phArrayList<T>::free()
+void ArrayList<T>::free()
 {
 	clear();
 
