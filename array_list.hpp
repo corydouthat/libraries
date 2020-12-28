@@ -161,6 +161,7 @@ bool ArrayList<T>::setAll(const T& item)
 	else
 	{
 		memset(data, item, count * sizeof(T));
+		return true;
 	}
 }
 

@@ -457,10 +457,10 @@ bool ArrayMat<T>::multSparseRow(const ArrayMat<T>& a_sp, const ArrayMat<int>& a_
                 // Iterate through sub-variables (a_sp.rows / n)
                 if (index >= 0)
                 {
-                    if (index > result->getNumRows() * n_d)
+                    if (index > int(result->getNumRows()) * n_d)
                         return false;
 
-                    for (unsigned int k = 0; k < n_d; k++)
+                    for (int k = 0; k < n_d; k++)
                     {
                         result->set(j, index * n_d + k, result->get(j, index * n_d + k) + a_sp.get(i, ind * n_d + k) * b.get(j, i));
                     }
@@ -491,7 +491,7 @@ bool ArrayMat<T>::multSparseCol(const ArrayMat<T>& a_sp, const ArrayMat<int>& a_
         return false;
 
     int index;
-    int n_d = a_sp.getNumCols() / n;
+    unsigned int n_d = a_sp.getNumCols() / n;
 
     if (result->getNumRows() != a_sp.getNumRows() || result->getNumCols() != b.getNumCols())
         result->allocateZero(a_sp.getNumRows(), b.getNumCols());
