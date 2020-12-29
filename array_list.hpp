@@ -269,7 +269,7 @@ void ArrayList<T>::copyData(const ArrayList<T>& b)
 template <typename T>
 bool ArrayList<T>::remove(unsigned int index)
 {
-	if (index => count)
+	if (index >= count)
 		return false;	// Invalid index
 	else
 	{
