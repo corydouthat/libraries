@@ -17,6 +17,37 @@
 #include "mat.hpp"
 #include "array_mat.hpp"
 
+
+// SolveQuadratic()
+// Solve quadratic equation using numerically stable method
+// q = -1/2(b + sign(b) * sqrt(b^2 - 4ac))
+// x1 = q/a		x2 = c/q
+// Inputs:	a, b, c - coefficients from ax^2 + bx + c = 0
+// Return:	x1, x2 - roots
+//			bool - real roots found
+template <typename T>
+bool SolveQuadratic(T a, T b, T c, T* x1, T* x2)
+{
+	if (a == 0)		// TODO: check close to zero?
+		return false;
+	
+	T q;
+		
+	if (b >= 0)
+		q = -0.5 * (b + sqrt(b * b - 4 * a * c));
+	else
+		q = -0.5 * (b - sqrt(b * b - 4 * a * c));
+
+	if (q == 0)		// TODO: check close to zero?
+		return false;
+
+	t1* = q / a;
+	t2* = c / q;
+
+	return true;
+}
+
+
 // Determinant() - Calculate the determinant of an arbitrary-sized square matrix
 // Inputs:  mat = matrix data array
 //          size = matrix size (width of square matrix)
