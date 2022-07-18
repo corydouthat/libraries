@@ -5,7 +5,7 @@
 // The matrix data is stored in column-major format. [j] returns column j,
 // and [j][i] returns the item at column j, row i.
 // Author(s): Cory Douthat
-// Copyright (c) 2020 Cory Douthat, All Rights Reserved.
+// Copyright (c) 2022 Cory Douthat, All Rights Reserved.
 // *****************************************************************************************************************************
 
 #ifndef MAT_HPP_

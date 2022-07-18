@@ -4,7 +4,7 @@
 // Quaternion Libraries
 // Template definition for data type
 // Author(s): Cory Douthat
-// Copyright (c) 2020 Cory Douthat, All Rights Reserved.
+// Copyright (c) 2022 Cory Douthat, All Rights Reserved.
 // *****************************************************************************************************************************
 
 #ifndef QUAT_HPP_
@@ -32,11 +32,15 @@ public:
     // FUNCTIONS
     // Constructors
     Quat() : a(1),b(0),c(0),d(0) {}											// Constructor: initialize to identity
-    Quat(const T &a,const T &b,const T &c, const T &d) : a(a),b(b),c(c),d(d) {}	    // Constructor: a, bi, cj, dk
-    Quat(const Quat<T> &b) { memcpy(this, &b, sizeof(*this)); }				// Constructor: copy
-	
+    Quat(const T &a2,const T &b2,const T &c2, const T &d2) : a(a2),b(b2),c(c2),d(d2) {}	    // Constructor: a, bi, cj, dk
+    Quat(const Quat<T> &b2) { memcpy(this, &b2, sizeof(*this)); }			// Constructor: copy
+	template <typename T2>
+	Quat(const Quat<T2>& b2) { *this = b2; }								// Constructor: copy (conversion)
+
     // Basic Operators
-    const Quat<T>& operator =(const Quat<T> &b);							// Operator =
+    const Quat<T>& operator =(const Quat<T>& b);							// Operator =
+	template <typename T2>
+	const Quat<T>& operator =(const Quat<T2>& b);							// Operator = (assignment/conversion)
     T& operator [](unsigned int i) { return v[i]; }							// Operator []
     const T& operator [](unsigned int i)const { return v[i]; }				// Operator [] const
     bool operator ==(const Quat<T> &b)const;								// Operator ==
@@ -44,7 +48,7 @@ public:
     // Quat Operators
     Quat<T> operator +(const Quat<T> &q2)const;								// Operator +
     Quat<T> operator -(const Quat<T> &q2)const;								// Operator -
-    Quat<T> operator *(const Quat<T> &q2)const;									// Multiplication (non-commutative)
+    Quat<T> operator *(const Quat<T> &q2)const;								// Multiplication (non-commutative)
     //const Quat<T>& operator +=(const Quat<T> &q2) { return *this = *this + q2; }	// Operator +=
     //const Quat<T>& operator -=(const Quat<T> &a2) { return *this = *this - q2; }	// Operator -=
     // Scalar Operators
@@ -56,12 +60,17 @@ public:
     // Other Member Functions
 	Quat<T> conj()const;													// Conjugate of Quat
 	Quat<T> inv()const;														// Inverse of Quat
+	Quat<T> qexp()const;													// Calculate exponential (base e) of Quat
+	Quat<T> qln()const;														// Calculate logarithm (base e) of Quat
+	Quat<T> qpow(T x)const;													// Raise Quat to a power x
 	T norm()const;															// Norm of Quat ||q||
 	Quat<T> unit()const { return *this / this->norm(); }					// Get unit Quat q/||q||
 	const Quat<T>& unitize() { return *this = *this / this->norm(); }		// Unitize Quat
 	Quat<T> rotate(const Quat<T> &q2)const;									// Rotate Quat
     bool similar(const Quat<T> &b,T margin = 0.01)const;					// Check if Quats are similar
     const T* getData()const { return (const T*)(&v); }						// Get pointer to raw data
+
+	static Quat<T> slerp(const Quat<T>& q1, const Quat<T>& q2, T t);		// Slerp (interpolation) between two Quats
 
 // Functions relating to vectors (Vec3)
 #ifdef VEC_HPP_
@@ -139,6 +148,19 @@ template <typename T>
 const Quat<T>& Quat<T>::operator =(const Quat<T> &b)
 {
 	memcpy(this, &b, sizeof(*this));
+	return *this;
+}
+
+// Operator = (assignment/conversion)
+template <typename T>
+template <typename T2>
+const Quat<T>& Quat<T>::operator =(const Quat<T2>& b)
+{
+	w = T(b.w);
+	x = T(b.x);
+	y = T(b.y);
+	z = T(b.z);
+
 	return *this;
 }
 
@@ -223,6 +245,42 @@ Quat<T> Quat<T>::inv()const
 	//return Quat(a, -b, -c, -d) / (a*a + b*b + c*c + d*d);
 }
 
+// Calculate exponential (base e) of Quat
+template <typename T>
+Quat<T> Quat<T>::qexp()const
+{
+	// https://math.stackexchange.com/questions/939229/unit-quaternion-to-a-scalar-power
+
+	// TODO: check for denominator == 0
+	T len_xyz = sqrt(x * x + y * y + z * z);
+	Quat<T> sgn = *this / sqrt(w * w + x * x + y * y + z * z);
+
+	return exp(w) * (Quat<T>(cos(len_xyz), 0, 0, 0) + sgn * sin(len_xyz));
+}
+
+// Calculate logarithm (base e) of Quat
+template <typename T>
+Quat<T> Quat<T>::qln()const
+{
+	// https://math.stackexchange.com/questions/939229/unit-quaternion-to-a-scalar-power
+	
+	// TODO: check for len == 0
+	T len = sqrt(w * w + x * x + y * y + z * z);
+	Quat<T> sgn = *this / len;
+
+	return Quat<T>(log(len), 0, 0, 0) + sgn * acos(w / len);
+}
+
+// Raise Quat to a power x
+template <typename T>
+Quat<T> Quat<T>::qpow(T x)const
+{
+	// https://math.stackexchange.com/questions/939229/unit-quaternion-to-a-scalar-power
+	// TODO: Is this optimized?
+
+	return (x * qln()).qexp();
+}
+
 // Norm of Quat ||q||
 template <typename T>
 T Quat<T>::norm()const
@@ -245,6 +303,18 @@ template <typename T>
 bool Quat<T>::similar(const Quat<T> &b, T margin)const
 {
 	return ((a - b.a <= margin) && (b - b.b <= margin) && (c - b.c <= margin) && (d - b.d <= margin));
+}
+
+// Slerp (interpolation) between two Quats
+template <typename T>
+Quat<T> Quat<T>::slerp(const Quat<T>& q1, const Quat<T>& q2, T t)
+{
+	// TODO: Need to check if they're unit quaternions?
+	if (t > 1.0)
+		t = 1.0;
+
+	// https://en.wikipedia.org/wiki/Slerp#Quaternion_Slerp
+	return q1 * (q1.inv() * q2).qpow(t);
 }
 
 #ifdef VEC_HPP_

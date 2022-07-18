@@ -3,7 +3,7 @@
 // Array List Template Class
 // Self-resizing dynamic array
 // Author(s): Cory Douthat
-// Copyright (c) 2020 Cory Douthat, All Rights Reserved.
+// Copyright (c) 2022 Cory Douthat, All Rights Reserved.
 // *****************************************************************************************************************************
 
 #ifndef ARRAY_LIST_HPP_
@@ -41,7 +41,8 @@ public:
 	bool allocate(unsigned int new_size);						// Re-allocate to new size
 
 	bool set(unsigned int index, const T& item);				// Set value at index
-	bool setAll(const T& item);									// Set value of all
+	bool setAll(int item);										// Set value of all
+	bool assignAll(const T& item);								// Assign value of all (any data type)
 
 	bool insert(unsigned int index, const T& item);				// Insert item at index
 	unsigned int insertSorted(const T& item, bool order, bool dup);	// Insert item into sorted list
@@ -152,15 +153,32 @@ bool ArrayList<T>::set(unsigned int index, const T& item)
 	}
 }
 
-// Set value of all
+// Set value of all (integer)
 template <typename T>
-bool ArrayList<T>::setAll(const T& item)
+bool ArrayList<T>::setAll(int item)
 {
 	if (count == 0)
 		return false;
 	else
 	{
 		memset(data, item, count * sizeof(T));
+		return true;
+	}
+}
+
+// Assign value of all (any data type)
+template <typename T>
+bool ArrayList<T>::assignAll(const T& item)
+{
+	if (count == 0)
+		return false;
+	else
+	{
+		for (unsigned int i = 0; i < count; i++)
+		{
+			data[i] = item;
+		}
+
 		return true;
 	}
 }
@@ -279,6 +297,8 @@ bool ArrayList<T>::remove(unsigned int index)
 		}
 
 		count--;
+
+		return true;
 	}
 }
 

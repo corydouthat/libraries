@@ -2,7 +2,7 @@
 // math_misc.hpp
 // Miscellaneous Math Functions
 // Author(s): Cory Douthat
-// Copyright (c) 2020 Cory Douthat, All Rights Reserved.
+// Copyright (c) 2022 Cory Douthat, All Rights Reserved.
 // *****************************************************************************************************************************
 
 #ifndef MATH_MISC_HPP_
@@ -41,8 +41,8 @@ bool SolveQuadratic(T a, T b, T c, T* x1, T* x2)
 	if (q == 0)		// TODO: check close to zero?
 		return false;
 
-	t1* = q / a;
-	t2* = c / q;
+	*x1 = q / a;
+	*x2 = c / q;
 
 	return true;
 }
@@ -99,6 +99,7 @@ T Determinant(const T *mat, unsigned int size)
     return det;
 }
 
+// TODO: Move to phSolvers.hpp?
 // CAUTION: Numerically unstable. Use Gaussian Elimination instead unless you know what you're doing.
 // SolveCramer() - Solve a system of linear equations using Cramer's Rule.
 // Format Ax = b
@@ -136,6 +137,7 @@ bool SolveCramer(const T *A_mat,const T *b_vec,unsigned int n,T *x_vec)
 
 
 // TODO: Improve efficiency by checking for special cases or no solution earlier?
+// TODO: Move to phSolvers.hpp?
 // SolveGaussElim() - Solve a system of linear equations using Gaussian Elimination
 // Performs Partial Pivoting; does not perform Full Pivoting
 // Format: Ax = b

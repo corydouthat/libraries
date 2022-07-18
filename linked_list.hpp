@@ -4,7 +4,7 @@
 // Double-Linked
 // Adapted from class written in 2007 at UMKC
 // Author(s): Cory Douthat
-// Copyright (c) 2020 Cory Douthat, All Rights Reserved.
+// Copyright (c) 2022 Cory Douthat, All Rights Reserved.
 // *****************************************************************************************************************************
 
 #ifndef LINKED_LIST_HPP_

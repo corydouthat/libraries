@@ -5,7 +5,7 @@
 // The matrix data is stored in column-major format. [j] returns column j,
 // and [j][i] returns the item at column j, row i.
 // Author(s): Cory Douthat
-// Copyright (c) 2020 Cory Douthat, All Rights Reserved.
+// Copyright (c) 2022 Cory Douthat, All Rights Reserved.
 // *****************************************************************************************************************************
 
 #ifndef ARRAY_MAT_HPP_
@@ -56,7 +56,7 @@ public:
     // Scalar Operators
     ArrayMat<T> operator *(T s)const;					    // Operator * (scalar)
     ArrayMat<T> operator -()const { return *this * -1; }	// Operator - (scalar inverse)
-   const ArrayMat<T>& operator *=(T s);                     // Operator *= (scalar)
+    const ArrayMat<T>& operator *=(T s);                     // Operator *= (scalar)
     // Other Member Functions
     bool isEmpty()const;                                    // Check if empty (null pointer)
     void clear();                                           // Erase and set to null/zero
@@ -64,7 +64,12 @@ public:
     void allocateZero(unsigned int r, unsigned int c);      // Allocate memory (to zeros)
     void allocateValue(unsigned int r, unsigned int c, T s);// Allocate memory (to s value)
     T get(unsigned int col, unsigned int row)const;		    // Get element
+    Vec3<T> getVec3R(unsigned int col, unsigned int row)const;  // Get Vec3 row
+    Vec3<T> getVec3C(unsigned int col, unsigned int row)const;  // Get Vec3 col
     void set(unsigned int col, unsigned int row, T s);	    // Set element
+    bool insert(unsigned int col, unsigned int row, const ArrayMat<T>& s);  // Insert ArrayMat
+    bool insertVec3R(unsigned int col, unsigned int row, const Vec3<T>& s); // Insert Vec3 as row
+    bool insertVec3C(unsigned int col, unsigned int row, const Vec3<T>& s); // Insert Vec3 as col
     T* getData() { return v; };                             // Return pointer to data
     unsigned int getCount()const { return rows * cols; }    // Return number of elements
     unsigned int getNumRows()const { return rows; }         // Return number of rows
@@ -119,8 +124,9 @@ const ArrayMat<T>& ArrayMat<T>::operator =(const ArrayMat<T>& b)
             rows = b.rows;
             cols = b.cols;
         }
-
-        memcpy(v, b.v, rows * cols * sizeof(T));
+        
+        if (v)
+            memcpy(v, b.v, rows * cols * sizeof(T));
     }
 
     return *this;
@@ -337,12 +343,95 @@ T ArrayMat<T>::get(unsigned int col, unsigned int row)const
         return (T)(INFINITY * T(0.0));	// NaN
 }
 
+// Get Vec3 row
+template <typename T>
+Vec3<T> ArrayMat<T>::getVec3R(unsigned int col, unsigned int row)const
+{
+    if (col + 3 >= cols)
+        return Vec3<T>();
+    
+    Vec3<T> temp;
+
+    for (unsigned int j = 0; j < 3; j++)
+    {
+        temp[j] = get(col + j, row);
+    }
+
+    return temp;
+}
+
+// Get Vec3 col
+template <typename T>
+Vec3<T> ArrayMat<T>::getVec3C(unsigned int col, unsigned int row)const
+{
+    if (row + 3 >= rows)
+        return Vec3<T>();
+
+    Vec3<T> temp;
+
+    for (unsigned int i = 0; i < 3; i++)
+    {
+        temp[i] = get(row + i, col);
+    }
+
+    return temp;
+}
+
 template <typename T>
 void ArrayMat<T>::set(unsigned int col, unsigned int row, T s)
 {
     if (!isEmpty() && col < cols && row < rows)
         v[col * rows + row] = s;
 }
+
+// Insert ArrayMat
+template <typename T>
+bool ArrayMat<T>::insert(unsigned int col, unsigned int row, const ArrayMat<T>& s)
+{
+    if (col + s.cols >= cols || row + s.rows >= rows)
+        return false;
+
+    for (unsigned int i = 0; i < s.rows; i++)
+    {
+        for (unsigned int j = 0; j < s.cols; j++)
+        {
+            set(j + col, i + row, s.get(j, i));
+        }
+    }
+
+    return true;
+}
+
+// Insert Vec3 as row
+template <typename T>
+bool ArrayMat<T>::insertVec3R(unsigned int col, unsigned int row, const Vec3<T>& s)
+{
+    if (col + 3 >= cols)
+        return false;
+
+    for (unsigned int j = 0; j < 3; j++)
+    {
+        set(j + col, row, s[j]);
+    }
+
+    return true;
+}
+
+// Insert Vec3 as col
+template <typename T>
+bool ArrayMat<T>::insertVec3C(unsigned int col, unsigned int row, const Vec3<T>& s)
+{
+    if (row + 3 >= rows)
+        return false;
+
+    for (unsigned int i = 0; i < 3; i++)
+    {
+        set(col, i + row, s[i]);
+    }
+
+    return true;
+}
+
 
 // Transpose
 template <typename T>
