@@ -53,7 +53,7 @@ public:
     //const Quat<T>& operator -=(const Quat<T> &a2) { return *this = *this - q2; }	// Operator -=
     // Scalar Operators
     Quat<T> operator *(T s)const;											// Operator * (scalar)
-    template <typename sT> friend Quat<sT> operator *(sT s,const Quat<sT> &q);	// Operator * (scalar)
+    template <typename sT> friend Quat<sT> operator *(sT s, const Quat<sT> &q);	// Operator * (scalar)
     Quat<T> operator /(T s)const;											// Operator / (scalar)
     const Quat<T>& operator *=(T s) { return *this = *this * s; }			// Operator *= (scalar)
     const Quat<T>& operator /=(T s) { return *this = *this / s; }			// Operator /= (scalar)
