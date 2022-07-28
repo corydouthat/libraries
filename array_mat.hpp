@@ -331,7 +331,8 @@ template <typename T>
 void ArrayMat<T>::allocateValue(unsigned int r, unsigned int c, T s)
 {
     allocate(r, c);
-    memset(v, s, rows * cols * sizeof(T));  // TODO: doesn't work with std::numeric_limits<T>::infinity() for some reason
+    for (unsigned int i = 0; i < rows * cols; i++)
+        v[i] = s;
 }
 
 template <typename T>
@@ -347,7 +348,7 @@ T ArrayMat<T>::get(unsigned int col, unsigned int row)const
 template <typename T>
 Vec3<T> ArrayMat<T>::getVec3R(unsigned int col, unsigned int row)const
 {
-    if (col + 3 >= cols)
+    if (col + 3 > cols)
         return Vec3<T>();
     
     Vec3<T> temp;
@@ -364,14 +365,14 @@ Vec3<T> ArrayMat<T>::getVec3R(unsigned int col, unsigned int row)const
 template <typename T>
 Vec3<T> ArrayMat<T>::getVec3C(unsigned int col, unsigned int row)const
 {
-    if (row + 3 >= rows)
+    if (row + 3 > rows)
         return Vec3<T>();
 
     Vec3<T> temp;
 
     for (unsigned int i = 0; i < 3; i++)
     {
-        temp[i] = get(row + i, col);
+        temp[i] = get(col, row + i);
     }
 
     return temp;
@@ -388,7 +389,7 @@ void ArrayMat<T>::set(unsigned int col, unsigned int row, T s)
 template <typename T>
 bool ArrayMat<T>::insert(unsigned int col, unsigned int row, const ArrayMat<T>& s)
 {
-    if (col + s.cols >= cols || row + s.rows >= rows)
+    if (col + s.cols > cols || row + s.rows > rows)
         return false;
 
     for (unsigned int i = 0; i < s.rows; i++)
@@ -406,7 +407,7 @@ bool ArrayMat<T>::insert(unsigned int col, unsigned int row, const ArrayMat<T>& 
 template <typename T>
 bool ArrayMat<T>::insertVec3R(unsigned int col, unsigned int row, const Vec3<T>& s)
 {
-    if (col + 3 >= cols)
+    if (col + 3 > cols)
         return false;
 
     for (unsigned int j = 0; j < 3; j++)
@@ -421,7 +422,7 @@ bool ArrayMat<T>::insertVec3R(unsigned int col, unsigned int row, const Vec3<T>&
 template <typename T>
 bool ArrayMat<T>::insertVec3C(unsigned int col, unsigned int row, const Vec3<T>& s)
 {
-    if (row + 3 >= rows)
+    if (row + 3 > rows)
         return false;
 
     for (unsigned int i = 0; i < 3; i++)
@@ -582,10 +583,8 @@ bool ArrayMat<T>::multSparseCol(const ArrayMat<T>& a_sp, const ArrayMat<int>& a_
     int index;
     unsigned int n_d = a_sp.getNumCols() / n;
 
-    if (result->getNumRows() != a_sp.getNumRows() || result->getNumCols() != b.getNumCols())
-        result->allocateZero(a_sp.getNumRows(), b.getNumCols());
-    else
-        memset(result->v, 0, result->getNumRows() * result->getNumCols() * sizeof(T));
+    // Clear matrix
+    result->allocateZero(a_sp.getNumRows(), b.getNumCols());
 
     // A Row
     for (unsigned int i = 0; i < a_sp.getNumRows(); i++)
