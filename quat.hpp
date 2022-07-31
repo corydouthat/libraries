@@ -64,9 +64,9 @@ public:
 	Quat<T> qln()const;														// Calculate logarithm (base e) of Quat
 	Quat<T> qpow(T x)const;													// Raise Quat to a power x
 	T norm()const;															// Norm of Quat ||q||
-	Quat<T> unit()const { return *this / this->norm(); }					// Get unit Quat q/||q||
-	const Quat<T>& unitize() { return *this = *this / this->norm(); }		// Unitize Quat
-	Quat<T> rotate(const Quat<T> &q2)const;									// Rotate Quat
+	Quat<T> unit()const;													// Get unit Quat q/||q||
+	const Quat<T>& unitize();												// Unitize Quat
+	Quat<T> rotate(const Quat<T> &q2)const;									// Rotate vector in Quat format
     bool similar(const Quat<T> &b,T margin = 0.01)const;					// Check if Quats are similar
     const T* getData()const { return (const T*)(&v); }						// Get pointer to raw data
 
@@ -238,7 +238,8 @@ Quat<T> Quat<T>::conj()const
 template <typename T>
 Quat<T> Quat<T>::inv()const
 {
-	// If unit quaternion
+	// TODO: conj() only if unit quaternion:
+	// TODO: check for this by tracking in a member variable?
 	return conj();
 
 	// TODO: (check) - Else non-unit quaternion
@@ -251,9 +252,14 @@ Quat<T> Quat<T>::qexp()const
 {
 	// https://math.stackexchange.com/questions/939229/unit-quaternion-to-a-scalar-power
 
-	// TODO: check for denominator == 0
+	// Check for zero quaternion / denominator == 0
+	T len = norm();
+	if (len == 0)
+		return Quat<T>(0, 0, 0, 0);
+
 	T len_xyz = sqrt(x * x + y * y + z * z);
-	Quat<T> sgn = *this / sqrt(w * w + x * x + y * y + z * z);
+
+	Quat<T> sgn = *this / len;
 
 	return exp(w) * (Quat<T>(cos(len_xyz), 0, 0, 0) + sgn * sin(len_xyz));
 }
@@ -265,7 +271,12 @@ Quat<T> Quat<T>::qln()const
 	// https://math.stackexchange.com/questions/939229/unit-quaternion-to-a-scalar-power
 	
 	// TODO: check for len == 0
-	T len = sqrt(w * w + x * x + y * y + z * z);
+	T len = norm();
+
+	// ln(0) is undefined, but best we can do is return a zero quat?
+	if (len == 0)
+		return Quat<T>(0, 0, 0, 0);
+
 	Quat<T> sgn = *this / len;
 
 	return Quat<T>(log(len), 0, 0, 0) + sgn * acos(w / len);
@@ -286,10 +297,34 @@ template <typename T>
 T Quat<T>::norm()const
 {
 	// TODO: more efficient way?
-	return *this * this->inv();
+	return sqrt(a*a + b*b + c*c + d*d);
 }
 
-// Rotate Quat
+// Get unit Quat q/||q||
+template <typename T>
+Quat<T> Quat<T>::unit()const 
+{ 
+	T norm = this->norm();
+
+	if (norm == 0)
+		return Quat<T>();	// Identity quaternion
+	else
+		return *this / norm; 
+}
+
+// Unitize this Quat
+template <typename T>
+const Quat<T>& Quat<T>::unitize() 
+{ 
+	T norm = this->norm();
+
+	if (norm == 0)
+		return *this = Quat<T>();	// Identity quaternion
+	else
+		return *this = *this / norm; 
+}
+
+// Rotate vector in Quat format
 template <typename T>
 Quat<T> Quat<T>::rotate(const Quat<T> &q2)const
 {
@@ -313,8 +348,16 @@ Quat<T> Quat<T>::slerp(const Quat<T>& q1, const Quat<T>& q2, T t)
 	if (t > 1.0)
 		t = 1.0;
 
+	// Math results in zero quat if both are equal - not sure if that's correct
+	if (t <= 0 || q1 == q2)
+		return q1;
+
+	if (t > 1)
+		return q2;
+
 	// https://en.wikipedia.org/wiki/Slerp#Quaternion_Slerp
-	return q1 * (q1.inv() * q2).qpow(t);
+	// TODO: may need to handle unitization more wholistically for rotation quats
+	return (q1 * (q1.inv() * q2).qpow(t)).unitize();
 }
 
 #ifdef VEC_HPP_
