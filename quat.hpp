@@ -104,7 +104,7 @@ typedef Quat<short> Quats;
 template <typename T>
 Quat<T>::Quat(const T angle, Vec3<T> &axis)
 {
-	if (angle != T(0) && axis != Vec3f(0, 0, 0))
+	if (angle != T(0) && axis != Vec3<T>(0, 0, 0))
 	{
 		Vec3<T> r = axis.norm();
 		T temp = sin(angle / 2);
@@ -255,7 +255,7 @@ Quat<T> Quat<T>::qexp()const
 	// Check for zero quaternion / denominator == 0
 	T len = norm();
 	if (len == 0)
-		return Quat<T>(0, 0, 0, 0);
+		return Quat<T>(1, 0, 0, 0);
 
 	T len_xyz = sqrt(x * x + y * y + z * z);
 
@@ -356,7 +356,7 @@ Quat<T> Quat<T>::slerp(const Quat<T>& q1, const Quat<T>& q2, T t)
 		return q2;
 
 	// https://en.wikipedia.org/wiki/Slerp#Quaternion_Slerp
-	// TODO: may need to handle unitization more wholistically for rotation quats
+	// TODO: may need to handle unitization more wholistically (not just this function) for rotation quats
 	return (q1 * (q1.inv() * q2).qpow(t)).unitize();
 }
 
