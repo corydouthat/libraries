@@ -23,9 +23,9 @@ public:
     // DATA
     union
     {
-        struct { T w; T x; T y; T z; };
+        // struct { T w; T x; T y; T z; };
 		struct { T a; T b; T c; T d; };
-		struct { T a; T i; T j; T k; };
+		// struct { T a; T i; T j; T k; };
         T v[4];
     };
 
@@ -156,10 +156,10 @@ template <typename T>
 template <typename T2>
 const Quat<T>& Quat<T>::operator =(const Quat<T2>& b)
 {
-	w = T(b.w);
-	x = T(b.x);
-	y = T(b.y);
-	z = T(b.z);
+	a = T(b.a);
+	b = T(b.b);
+	c = T(b.c);
+	d = T(b.d);
 
 	return *this;
 }
@@ -257,11 +257,11 @@ Quat<T> Quat<T>::qexp()const
 	if (len == 0)
 		return Quat<T>(1, 0, 0, 0);
 
-	T len_xyz = sqrt(x * x + y * y + z * z);
+	T len_xyz = sqrt(b * b + c * c + d * d);
 
 	Quat<T> sgn = *this / len;
 
-	return exp(w) * (Quat<T>(cos(len_xyz), 0, 0, 0) + sgn * sin(len_xyz));
+	return exp(a) * (Quat<T>(cos(len_xyz), 0, 0, 0) + sgn * sin(len_xyz));
 }
 
 // Calculate logarithm (base e) of Quat
@@ -279,7 +279,7 @@ Quat<T> Quat<T>::qln()const
 
 	Quat<T> sgn = *this / len;
 
-	return Quat<T>(log(len), 0, 0, 0) + sgn * acos(w / len);
+	return Quat<T>(log(len), 0, 0, 0) + sgn * acos(a / len);
 }
 
 // Raise Quat to a power x
