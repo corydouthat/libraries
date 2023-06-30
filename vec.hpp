@@ -449,16 +449,16 @@ Vec2<T> operator *(T s,const Vec2<T> &b)
 // Vec3 - Non-Member Friend Operator
 // Operator * (scalar * Vec3)
 template <typename T>
-Vec3<T> operator *(T s,const Vec3<T> &b)
+Vec3<T> operator *(T s, const Vec3<T> &b)
 {
-	return Vec3<T>(b.x * s,b.y * s, b.z * s);
+	return Vec3<T>(b.x * s, b.y * s, b.z * s);
 }
 // Vec4 - Non-Member Friend Operator
 // Operator * (scalar * Vec4)
 template <typename T>
-Vec4<T> operator *(T s,const Vec4<T> &b)
+Vec4<T> operator *(T s, const Vec4<T> &b)
 {
-    return Vec4<T>(b.x * s,b.y * s,b.z * s,w * s);
+    return Vec4<T>(b.x * s, b.y * s, b.z * s, b.w * s);
 }
 
 
