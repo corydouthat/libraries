@@ -23,9 +23,9 @@ public:
     // DATA
     union
     {
-        // struct { T w; T x; T y; T z; };
+        struct { T w; T x; T y; T z; };
 		struct { T a; T b; T c; T d; };
-		// struct { T a; T i; T j; T k; };
+		//struct { T a; T i; T j; T k; };
         T v[4];
     };
 
