@@ -52,11 +52,12 @@ public:
     //const Quat<T>& operator +=(const Quat<T> &q2) { return *this = *this + q2; }	// Operator +=
     //const Quat<T>& operator -=(const Quat<T> &a2) { return *this = *this - q2; }	// Operator -=
     // Scalar Operators
-    Quat<T> operator *(T s)const;											// Operator * (scalar)
-    template <typename sT> friend Quat<sT> operator *(sT s, const Quat<sT> &q);	// Operator * (scalar)
-    Quat<T> operator /(T s)const;											// Operator / (scalar)
-    const Quat<T>& operator *=(T s) { return *this = *this * s; }			// Operator *= (scalar)
-    const Quat<T>& operator /=(T s) { return *this = *this / s; }			// Operator /= (scalar)
+    // DANGEROUS - THESE DO NOT SCALE ROTATION
+	// Quat<T> operator *(T s)const;											// Operator * (scalar)
+    // template <typename sT> friend Quat<sT> operator *(sT s, const Quat<sT> &q);	// Operator * (scalar)
+    // Quat<T> operator /(T s)const;											// Operator / (scalar)
+    // const Quat<T>& operator *=(T s) { return *this = *this * s; }			// Operator *= (scalar)
+    // const Quat<T>& operator /=(T s) { return *this = *this / s; }			// Operator /= (scalar)
     // Other Member Functions
 	Quat<T> conj()const;													// Conjugate of Quat
 	Quat<T> inv()const;														// Inverse of Quat
@@ -74,7 +75,7 @@ public:
 
 // Functions relating to vectors (Vec3)
 #ifdef VEC_HPP_
-	Quat(const T angle, Vec3<T> &axis);										// Constructor: Axis-Angle
+	Quat(T angle, const Vec3<T> &axis);										// Constructor: Axis-Angle
 	Quat(const Vec4<T> &b) { memcpy(this->v, b.getData(), sizeof(*this)); }	// Constructor: 4D vector
 	Vec3<T> rotate(const Vec3<T> &p)const;									// Rotate vector by quat
 	Vec3<T> toEuler()const;													// To Euler angles (scaled Vec3)
@@ -102,7 +103,7 @@ typedef Quat<short> Quats;
 #ifdef VEC_HPP_
 // Constructor: Axis-Angle
 template <typename T>
-Quat<T>::Quat(const T angle, Vec3<T> &axis)
+Quat<T>::Quat(T angle, const Vec3<T> &axis)
 {
 	if (angle != T(0) && axis != Vec3<T>(0, 0, 0))
 	{
@@ -202,28 +203,28 @@ Quat<T> Quat<T>::operator *(const Quat<T> &q2)const
 	return temp;
 }
 
-// SCALAR OPERATORS
-// *****************************************************************************************************************************
-// Operator * (scalar)
-template <typename T>
-Quat<T> Quat<T>::operator *(T s)const
-{
-	return Quat<T>(a*s, b*s, c*s, d*s);
-}
+// // SCALAR OPERATORS
+// // *****************************************************************************************************************************
+// // Operator * (scalar)
+// template <typename T>
+// Quat<T> Quat<T>::operator *(T s)const
+// {
+// 	return Quat<T>(a*s, b*s, c*s, d*s);
+// }
 
-// Non-Member Operator * (scalar * Quat)
-template <typename T> 
-Quat<T> operator *(T s, const Quat<T> &q)
-{
-	return Quat<T>(q.a*s, q.b*s, q.c*s, q.d*s);
-}
+// // Non-Member Operator * (scalar * Quat)
+// template <typename T> 
+// Quat<T> operator *(T s, const Quat<T> &q)
+// {
+// 	return Quat<T>(q.a*s, q.b*s, q.c*s, q.d*s);
+// }
 
-// Operator / (scalar)
-template <typename T>
-Quat<T> Quat<T>::operator /(T s)const
-{
-	return Quat<T>(a/s, b/s, c/s, d/s);
-}
+// // Operator / (scalar)
+// template <typename T>
+// Quat<T> Quat<T>::operator /(T s)const
+// {
+// 	return Quat<T>(a/s, b/s, c/s, d/s);
+// }
 
 // OTHER MEMBER FUNCTIONS
 // *****************************************************************************************************************************
