@@ -219,4 +219,37 @@ bool SolveGaussElim(const T *A_mat, const T *b_vec, unsigned int n, T *x_vec)
 	return true;
 }
 
+
+template<typename T>
+T CalcTriangleArea(Vec3<T> a, Vec3<T> b, Vec3<T> c)
+{
+	return ((b - a) % (c - a)).len() / 2;
+}
+
+
+template<typename T>
+Vec3<T> ProjectVertexPlane(Vec3<T> v, Vec3<T> a, Vec3<T> b, Vec3<T> c)
+{
+	// Calculate normal / plane equation coefficients
+	Vec4<T> plane = Vec4<T>(Vec3<T>((b - a) % (c - b)), 0);
+	plane.w = -plane.x * a.x - plane.y * a.y - plane.z * a.z;
+
+	T translation = plane.w - (plane.xyz().norm() * v);
+
+	return plane.xyz().norm() * translation;
+}
+
+template <typename T>
+Vec3<T> CalcBarycentricCoefficients(Vec3<T> p, Vec3<T> a, Vec3<T> b, Vec3<T> c)
+{
+	T area_abc = CalcTriangleArea(a, b, c);
+	
+	Vec3<T> temp;
+	temp.x = CalcTriangleArea(c, a, p) / area_abc;
+	temp.y = CalcTriangleArea(a, b, p) / area_abc;
+	temp.z = CalcTriangleArea(b, c, p) / area_abc;
+
+	return temp;
+}
+
 #endif

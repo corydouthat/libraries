@@ -23,10 +23,11 @@ public:
 	ArrayList() : data(nullptr), count(0), size(0) {}			// Constructor: default
 	ArrayList(unsigned int c) : ArrayList() { allocate(c); }	// Constructor: w/ allocation
 	ArrayList(const ArrayList<T>& copy) : ArrayList() { *this = copy; }	// Constructor: copy
+	ArrayList(const T in[], unsigned int len);					// Constructor: array
 	~ArrayList() { free(); }									// Destructor
 
 	// OPERATORS
-	const ArrayList<T>& operator =(const ArrayList<T> &b);	// Operator =
+	const ArrayList<T>& operator =(const ArrayList<T> &b);		// Operator =
 	T& operator [](unsigned int i) { return data[i]; }			// Operator []
 	const T& operator [](unsigned int i)const { return data[i]; }	// Operator [] (const)
 
@@ -62,13 +63,25 @@ public:
 	T& getLast() { return (*this)[count - 1]; }					// Get reference to end item
 };
 
+// Constructor: array
+template<typename T>
+inline ArrayList<T>::ArrayList(const T in[], unsigned int len) : ArrayList()
+{
+	if (len == 0)
+		return;
+
+	updateCount(len);
+
+	memcpy(data, in, len * sizeof(T));
+}
+
 // Operator =
 template <typename T>
 const ArrayList<T>& ArrayList<T>::operator =(const ArrayList<T>& b)
 {
 	clear();
 
-	allocate(b.size());
+	allocate(b.size);
 
 	if (!(b.isEmpty()))
 	{
