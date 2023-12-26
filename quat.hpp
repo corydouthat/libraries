@@ -25,7 +25,7 @@ public:
     {
         struct { T w; T x; T y; T z; };
 		struct { T a; T b; T c; T d; };
-		struct { T a; T i; T j; T k; };
+		//struct { T a; T i; T j; T k; };
         T v[4];
     };
 
@@ -52,11 +52,12 @@ public:
     //const Quat<T>& operator +=(const Quat<T> &q2) { return *this = *this + q2; }	// Operator +=
     //const Quat<T>& operator -=(const Quat<T> &a2) { return *this = *this - q2; }	// Operator -=
     // Scalar Operators
-    Quat<T> operator *(T s)const;											// Operator * (scalar)
-    template <typename sT> friend Quat<sT> operator *(sT s, const Quat<sT> &q);	// Operator * (scalar)
-    Quat<T> operator /(T s)const;											// Operator / (scalar)
-    const Quat<T>& operator *=(T s) { return *this = *this * s; }			// Operator *= (scalar)
-    const Quat<T>& operator /=(T s) { return *this = *this / s; }			// Operator /= (scalar)
+    // DANGEROUS - THESE DO NOT SCALE ROTATION
+	// Quat<T> operator *(T s)const;											// Operator * (scalar)
+    // template <typename sT> friend Quat<sT> operator *(sT s, const Quat<sT> &q);	// Operator * (scalar)
+    // Quat<T> operator /(T s)const;											// Operator / (scalar)
+    // const Quat<T>& operator *=(T s) { return *this = *this * s; }			// Operator *= (scalar)
+    // const Quat<T>& operator /=(T s) { return *this = *this / s; }			// Operator /= (scalar)
     // Other Member Functions
 	Quat<T> conj()const;													// Conjugate of Quat
 	Quat<T> inv()const;														// Inverse of Quat
@@ -74,7 +75,7 @@ public:
 
 // Functions relating to vectors (Vec3)
 #ifdef VEC_HPP_
-	Quat(const T angle, Vec3<T> &axis);										// Constructor: Axis-Angle
+	Quat(T angle, const Vec3<T> &axis);										// Constructor: Axis-Angle
 	Quat(const Vec4<T> &b) { memcpy(this->v, b.getData(), sizeof(*this)); }	// Constructor: 4D vector
 	Vec3<T> rotate(const Vec3<T> &p)const;									// Rotate vector by quat
 	Vec3<T> toEuler()const;													// To Euler angles (scaled Vec3)
@@ -102,7 +103,7 @@ typedef Quat<short> Quats;
 #ifdef VEC_HPP_
 // Constructor: Axis-Angle
 template <typename T>
-Quat<T>::Quat(const T angle, Vec3<T> &axis)
+Quat<T>::Quat(T angle, const Vec3<T> &axis)
 {
 	if (angle != T(0) && axis != Vec3<T>(0, 0, 0))
 	{
@@ -156,10 +157,10 @@ template <typename T>
 template <typename T2>
 const Quat<T>& Quat<T>::operator =(const Quat<T2>& b)
 {
-	w = T(b.w);
-	x = T(b.x);
-	y = T(b.y);
-	z = T(b.z);
+	a = T(b.a);
+	b = T(b.b);
+	c = T(b.c);
+	d = T(b.d);
 
 	return *this;
 }
@@ -202,28 +203,28 @@ Quat<T> Quat<T>::operator *(const Quat<T> &q2)const
 	return temp;
 }
 
-// SCALAR OPERATORS
-// *****************************************************************************************************************************
-// Operator * (scalar)
-template <typename T>
-Quat<T> Quat<T>::operator *(T s)const
-{
-	return Quat<T>(a*s, b*s, c*s, d*s);
-}
+// // SCALAR OPERATORS
+// // *****************************************************************************************************************************
+// // Operator * (scalar)
+// template <typename T>
+// Quat<T> Quat<T>::operator *(T s)const
+// {
+// 	return Quat<T>(a*s, b*s, c*s, d*s);
+// }
 
-// Non-Member Operator * (scalar * Quat)
-template <typename T> 
-Quat<T> operator *(T s, const Quat<T> &q)
-{
-	return Quat<T>(q.a*s, q.b*s, q.c*s, q.d*s);
-}
+// // Non-Member Operator * (scalar * Quat)
+// template <typename T> 
+// Quat<T> operator *(T s, const Quat<T> &q)
+// {
+// 	return Quat<T>(q.a*s, q.b*s, q.c*s, q.d*s);
+// }
 
-// Operator / (scalar)
-template <typename T>
-Quat<T> Quat<T>::operator /(T s)const
-{
-	return Quat<T>(a/s, b/s, c/s, d/s);
-}
+// // Operator / (scalar)
+// template <typename T>
+// Quat<T> Quat<T>::operator /(T s)const
+// {
+// 	return Quat<T>(a/s, b/s, c/s, d/s);
+// }
 
 // OTHER MEMBER FUNCTIONS
 // *****************************************************************************************************************************
@@ -257,11 +258,11 @@ Quat<T> Quat<T>::qexp()const
 	if (len == 0)
 		return Quat<T>(1, 0, 0, 0);
 
-	T len_xyz = sqrt(x * x + y * y + z * z);
+	T len_xyz = sqrt(b * b + c * c + d * d);
 
 	Quat<T> sgn = *this / len;
 
-	return exp(w) * (Quat<T>(cos(len_xyz), 0, 0, 0) + sgn * sin(len_xyz));
+	return exp(a) * (Quat<T>(cos(len_xyz), 0, 0, 0) + sgn * sin(len_xyz));
 }
 
 // Calculate logarithm (base e) of Quat
@@ -279,7 +280,7 @@ Quat<T> Quat<T>::qln()const
 
 	Quat<T> sgn = *this / len;
 
-	return Quat<T>(log(len), 0, 0, 0) + sgn * acos(w / len);
+	return Quat<T>(log(len), 0, 0, 0) + sgn * acos(a / len);
 }
 
 // Raise Quat to a power x
