@@ -231,12 +231,12 @@ template<typename T>
 Vec3<T> ProjectVertexPlane(Vec3<T> v, Vec3<T> a, Vec3<T> b, Vec3<T> c)
 {
 	// Calculate normal / plane equation coefficients
-	Vec4<T> plane = Vec4<T>(Vec3<T>((b - a) % (c - b)), 0);
-	plane.w = -plane.x * a.x - plane.y * a.y - plane.z * a.z;
+	Vec4<T> plane = Vec4<T>(Vec3<T>((b - a) % (c - b)).norm(), 0);	// Calculate a, b, c in plane equation
+	plane.w = plane.x * a.x + plane.y * a.y + plane.z * a.z;		// Calculate "d" in plane equation
 
-	T translation = plane.w - (plane.xyz().norm() * v);
+	T translation = plane.w - (plane.xyz() * v);
 
-	return plane.xyz().norm() * translation;
+	return plane.xyz() * translation;
 }
 
 template <typename T>
@@ -245,9 +245,9 @@ Vec3<T> CalcBarycentricCoefficients(Vec3<T> p, Vec3<T> a, Vec3<T> b, Vec3<T> c)
 	T area_abc = CalcTriangleArea(a, b, c);
 	
 	Vec3<T> temp;
-	temp.x = CalcTriangleArea(c, a, p) / area_abc;
-	temp.y = CalcTriangleArea(a, b, p) / area_abc;
-	temp.z = CalcTriangleArea(b, c, p) / area_abc;
+	temp.x = CalcTriangleArea(b, c, p) / area_abc;
+	temp.y = CalcTriangleArea(c, a, p) / area_abc;
+	temp.z = CalcTriangleArea(a, b, p) / area_abc;
 
 	return temp;
 }
