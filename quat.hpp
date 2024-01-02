@@ -208,14 +208,14 @@ Quat<T> Quat<T>::operator *(const Quat<T> &q2)const
 template <typename T>
 Quat<T> Quat<T>::operator *(T s)const
 {
-return Quat<T>(a*s, b*s, c*s, d*s);
+	return Quat<T>(a*s, b*s, c*s, d*s);
 }
 
 // Operator / (scalar)
 template <typename T>
 Quat<T> Quat<T>::operator /(T s)const
 {
-return Quat<T>(a/s, b/s, c/s, d/s);
+	return Quat<T>(a/s, b/s, c/s, d/s);
 }
 
 // OTHER MEMBER FUNCTIONS
@@ -246,13 +246,13 @@ Quat<T> Quat<T>::qexp()const
 	// https://math.stackexchange.com/questions/939229/unit-quaternion-to-a-scalar-power
 
 	// Check for zero quaternion / denominator == 0
-	T len = norm();
-	if (len == 0)
-		return Quat<T>(1, 0, 0, 0);
-
+	T norm = this->norm();
 	T len_xyz = sqrt(b * b + c * c + d * d);
 
-	Quat<T> sgn = *this / len;
+	if (norm == 0 || len_xyz == 0)
+		return Quat<T>(1, 0, 0, 0);
+
+	Quat<T> sgn = *this / norm;
 
 	return (Quat<T>(cos(len_xyz), 0, 0, 0) * exp(a) + sgn * sin(len_xyz));
 }
@@ -263,16 +263,18 @@ Quat<T> Quat<T>::qln()const
 {
 	// https://math.stackexchange.com/questions/939229/unit-quaternion-to-a-scalar-power
 	
-	// TODO: check for len == 0
-	T len = norm();
+	T norm = this->norm();
+	T len_xyz = sqrt(x * x + y * y + z * z);
 
 	// ln(0) is undefined, but best we can do is return a zero quat?
-	if (len == 0)
-		return Quat<T>(0, 0, 0, 0);
+	if (norm == 0 || len_xyz == 0)
+		return Quat<T>(1, 0, 0, 0);
 
-	Quat<T> sgn = *this / len;
+	T qa = log(norm);
 
-	return Quat<T>(log(len), 0, 0, 0) + sgn * acos(a / len);
+	Vec3<T> qv = (Vec3<T>(x, y, z) / len_xyz) * acos(a / norm);
+
+	return Quat<T>(qa, qv.x, qv.y, qv.z);
 }
 
 // Raise Quat to a power x
