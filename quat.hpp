@@ -246,13 +246,13 @@ Quat<T> Quat<T>::qexp()const
 	// https://math.stackexchange.com/questions/939229/unit-quaternion-to-a-scalar-power
 
 	// Check for zero quaternion / denominator == 0
-	T norm = this->norm();
+	T len = norm();
 	T len_xyz = sqrt(b * b + c * c + d * d);
 
-	if (norm == 0 || len_xyz == 0)
+	if (len == 0 || len_xyz == 0)
 		return Quat<T>(1, 0, 0, 0);
 
-	Quat<T> sgn = *this / norm;
+	Quat<T> sgn = *this / len;
 
 	return (Quat<T>(cos(len_xyz), 0, 0, 0) * exp(a) + sgn * sin(len_xyz));
 }
@@ -263,16 +263,16 @@ Quat<T> Quat<T>::qln()const
 {
 	// https://math.stackexchange.com/questions/939229/unit-quaternion-to-a-scalar-power
 	
-	T norm = this->norm();
+	T len = norm();
 	T len_xyz = sqrt(x * x + y * y + z * z);
 
 	// ln(0) is undefined, but best we can do is return a zero quat?
-	if (norm == 0 || len_xyz == 0)
+	if (len == 0 || len_xyz == 0)
 		return Quat<T>(1, 0, 0, 0);
 
-	T qa = log(norm);
+	T qa = log(len);
 
-	Vec3<T> qv = (Vec3<T>(x, y, z) / len_xyz) * acos(a / norm);
+	Vec3<T> qv = (Vec3<T>(x, y, z) / len_xyz) * acos(a / len);
 
 	return Quat<T>(qa, qv.x, qv.y, qv.z);
 }

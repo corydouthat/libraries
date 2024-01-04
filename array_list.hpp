@@ -271,7 +271,7 @@ unsigned int ArrayList<T>::insertSorted(const T& item, bool order, bool dup)
 		}
 
 		// End of list
-		i = count - 1;
+		unsigned int i = count - 1;
 		if (dup || data[i] != item)
 		{
 			insert(count, item);
