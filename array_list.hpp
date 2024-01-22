@@ -222,6 +222,9 @@ bool ArrayList<T>::insert(unsigned int index, const T& item)
 		for (unsigned int i = count - 2; i >= index; i--)
 		{
 			data[i] = data[i - 1];
+
+			if (i == 0)
+				break;
 		}
 
 		data[index] = item;

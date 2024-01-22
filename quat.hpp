@@ -76,6 +76,7 @@ public:
 #ifdef VEC_HPP_
 	Quat(T angle, const Vec3<T> &axis);										// Constructor: Axis-Angle
 	Quat(const Vec4<T> &b) { memcpy(this->v, b.getData(), sizeof(*this)); }	// Constructor: 4D vector
+	Vec3<T> operator *(const Vec3<T>& vec)const { return rotate(vec); }		// Operator * (Vec3)
 	Vec3<T> rotate(const Vec3<T> &p)const;									// Rotate vector by quat
 	Vec3<T> toEuler()const;													// To Euler angles (scaled Vec3)
 	static Quat<T> fromEuler(const Vec3<T> &v);								// Generate from Euler angles (scaled Vec3)
