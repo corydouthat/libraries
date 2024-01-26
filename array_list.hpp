@@ -280,6 +280,8 @@ unsigned int ArrayList<T>::insertSorted(const T& item, bool order, bool dup)
 			insert(count, item);
 			return count;
 		}
+		else
+			return i;
 	}
 }
 
