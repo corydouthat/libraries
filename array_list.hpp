@@ -222,6 +222,9 @@ bool ArrayList<T>::insert(unsigned int index, const T& item)
 		for (unsigned int i = count - 2; i >= index; i--)
 		{
 			data[i] = data[i - 1];
+
+			if (i == 0)
+				break;
 		}
 
 		data[index] = item;
@@ -271,12 +274,14 @@ unsigned int ArrayList<T>::insertSorted(const T& item, bool order, bool dup)
 		}
 
 		// End of list
-		i = count - 1;
+		unsigned int i = count - 1;
 		if (dup || data[i] != item)
 		{
 			insert(count, item);
 			return count;
 		}
+		else
+			return i;
 	}
 }
 

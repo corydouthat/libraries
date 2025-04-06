@@ -219,35 +219,50 @@ bool SolveGaussElim(const T *A_mat, const T *b_vec, unsigned int n, T *x_vec)
 	return true;
 }
 
-
 template<typename T>
 T CalcTriangleArea(Vec3<T> a, Vec3<T> b, Vec3<T> c)
 {
 	return ((b - a) % (c - a)).len() / 2;
 }
 
-
 template<typename T>
 Vec3<T> ProjectVertexPlane(Vec3<T> v, Vec3<T> a, Vec3<T> b, Vec3<T> c)
 {
 	// Calculate normal / plane equation coefficients
-	Vec4<T> plane = Vec4<T>(Vec3<T>((b - a) % (c - b)), 0);
-	plane.w = -plane.x * a.x - plane.y * a.y - plane.z * a.z;
+	Vec4<T> plane = Vec4<T>(Vec3<T>((b - a) % (c - b)).norm(), 0);	// Calculate a, b, c in plane equation
+	plane.w = plane.x * a.x + plane.y * a.y + plane.z * a.z;		// Calculate "d" in plane equation
 
-	T translation = plane.w - (plane.xyz().norm() * v);
+	T translation = plane.w - (plane.xyz() * v);
 
-	return plane.xyz().norm() * translation;
+	return plane.xyz() * translation;
 }
 
 template <typename T>
 Vec3<T> CalcBarycentricCoefficients(Vec3<T> p, Vec3<T> a, Vec3<T> b, Vec3<T> c)
 {
+	// Barycentric coordinates can be negative, indicating p is outside the triangle
+	// Convention for signed area is counter-clockwise = positive, clockwise = negative
+	
 	T area_abc = CalcTriangleArea(a, b, c);
+
+	// We assume our abc triangle vertices are listed counter-clockwise
+	// TODO: should the normal be passed in?
+	// TODO: any other way to optimize the "signed area" checks?
+	Vec3<T> n = (b - a) % (c - b);
 	
 	Vec3<T> temp;
-	temp.x = CalcTriangleArea(c, a, p) / area_abc;
-	temp.y = CalcTriangleArea(a, b, p) / area_abc;
-	temp.z = CalcTriangleArea(b, c, p) / area_abc;
+
+	temp.x = CalcTriangleArea(b, c, p) / area_abc;
+	if (((c - b) % (p - c)) * n < 0)
+		temp.x = -temp.x;
+
+	temp.y = CalcTriangleArea(c, a, p) / area_abc;
+	if (((a - c) % (p - a)) * n < 0)
+		temp.y = -temp.y;
+
+	temp.z = CalcTriangleArea(a, b, p) / area_abc;
+	if (((b - a) % (p - b)) * n < 0)
+		temp.z = -temp.z;
 
 	return temp;
 }

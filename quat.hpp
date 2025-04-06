@@ -53,9 +53,8 @@ public:
     //const Quat<T>& operator -=(const Quat<T> &a2) { return *this = *this - q2; }	// Operator -=
     // Scalar Operators
     // DANGEROUS - THESE DO NOT SCALE ROTATION
-	// Quat<T> operator *(T s)const;											// Operator * (scalar)
-    // template <typename sT> friend Quat<sT> operator *(sT s, const Quat<sT> &q);	// Operator * (scalar)
-    // Quat<T> operator /(T s)const;											// Operator / (scalar)
+	Quat<T> operator *(T s)const;											// Operator * (scalar)
+    Quat<T> operator /(T s)const;											// Operator / (scalar)
     // const Quat<T>& operator *=(T s) { return *this = *this * s; }			// Operator *= (scalar)
     // const Quat<T>& operator /=(T s) { return *this = *this / s; }			// Operator /= (scalar)
     // Other Member Functions
@@ -77,6 +76,7 @@ public:
 #ifdef VEC_HPP_
 	Quat(T angle, const Vec3<T> &axis);										// Constructor: Axis-Angle
 	Quat(const Vec4<T> &b) { memcpy(this->v, b.getData(), sizeof(*this)); }	// Constructor: 4D vector
+	Vec3<T> operator *(const Vec3<T>& vec)const { return rotate(vec); }		// Operator * (Vec3)
 	Vec3<T> rotate(const Vec3<T> &p)const;									// Rotate vector by quat
 	Vec3<T> toEuler()const;													// To Euler angles (scaled Vec3)
 	static Quat<T> fromEuler(const Vec3<T> &v);								// Generate from Euler angles (scaled Vec3)
@@ -155,12 +155,12 @@ const Quat<T>& Quat<T>::operator =(const Quat<T> &b)
 // Operator = (assignment/conversion)
 template <typename T>
 template <typename T2>
-const Quat<T>& Quat<T>::operator =(const Quat<T2>& b)
+const Quat<T>& Quat<T>::operator =(const Quat<T2>& qb)
 {
-	a = T(b.a);
-	b = T(b.b);
-	c = T(b.c);
-	d = T(b.d);
+	a = T(qb.a);
+	b = T(qb.b);
+	c = T(qb.c);
+	d = T(qb.d);
 
 	return *this;
 }
@@ -203,28 +203,21 @@ Quat<T> Quat<T>::operator *(const Quat<T> &q2)const
 	return temp;
 }
 
-// // SCALAR OPERATORS
-// // *****************************************************************************************************************************
-// // Operator * (scalar)
-// template <typename T>
-// Quat<T> Quat<T>::operator *(T s)const
-// {
-// 	return Quat<T>(a*s, b*s, c*s, d*s);
-// }
+// SCALAR OPERATORS
+// *****************************************************************************************************************************
+// Operator * (scalar)
+template <typename T>
+Quat<T> Quat<T>::operator *(T s)const
+{
+	return Quat<T>(a*s, b*s, c*s, d*s);
+}
 
-// // Non-Member Operator * (scalar * Quat)
-// template <typename T> 
-// Quat<T> operator *(T s, const Quat<T> &q)
-// {
-// 	return Quat<T>(q.a*s, q.b*s, q.c*s, q.d*s);
-// }
-
-// // Operator / (scalar)
-// template <typename T>
-// Quat<T> Quat<T>::operator /(T s)const
-// {
-// 	return Quat<T>(a/s, b/s, c/s, d/s);
-// }
+// Operator / (scalar)
+template <typename T>
+Quat<T> Quat<T>::operator /(T s)const
+{
+	return Quat<T>(a/s, b/s, c/s, d/s);
+}
 
 // OTHER MEMBER FUNCTIONS
 // *****************************************************************************************************************************
@@ -255,14 +248,14 @@ Quat<T> Quat<T>::qexp()const
 
 	// Check for zero quaternion / denominator == 0
 	T len = norm();
-	if (len == 0)
-		return Quat<T>(1, 0, 0, 0);
-
 	T len_xyz = sqrt(b * b + c * c + d * d);
+
+	if (len == 0 || len_xyz == 0)
+		return Quat<T>(1, 0, 0, 0);
 
 	Quat<T> sgn = *this / len;
 
-	return exp(a) * (Quat<T>(cos(len_xyz), 0, 0, 0) + sgn * sin(len_xyz));
+	return (Quat<T>(cos(len_xyz), 0, 0, 0) * exp(a) + sgn * sin(len_xyz));
 }
 
 // Calculate logarithm (base e) of Quat
@@ -271,16 +264,18 @@ Quat<T> Quat<T>::qln()const
 {
 	// https://math.stackexchange.com/questions/939229/unit-quaternion-to-a-scalar-power
 	
-	// TODO: check for len == 0
 	T len = norm();
+	T len_xyz = sqrt(x * x + y * y + z * z);
 
 	// ln(0) is undefined, but best we can do is return a zero quat?
-	if (len == 0)
-		return Quat<T>(0, 0, 0, 0);
+	if (len == 0 || len_xyz == 0)
+		return Quat<T>(1, 0, 0, 0);
 
-	Quat<T> sgn = *this / len;
+	T qa = log(len);
 
-	return Quat<T>(log(len), 0, 0, 0) + sgn * acos(a / len);
+	Vec3<T> qv = (Vec3<T>(x, y, z) / len_xyz) * acos(a / len);
+
+	return Quat<T>(qa, qv.x, qv.y, qv.z);
 }
 
 // Raise Quat to a power x
@@ -290,7 +285,7 @@ Quat<T> Quat<T>::qpow(T x)const
 	// https://math.stackexchange.com/questions/939229/unit-quaternion-to-a-scalar-power
 	// TODO: Is this optimized?
 
-	return (x * qln()).qexp();
+	return (qln() * x).qexp();
 }
 
 // Norm of Quat ||q||
@@ -442,3 +437,4 @@ Mat4<T> Quat<T>::rotMat4()const
 #endif
 
 #endif
+

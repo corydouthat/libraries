@@ -620,7 +620,7 @@ bool ArrayMat<T>::multSparseCol(const ArrayMat<T>& a_sp, const ArrayMat<int>& a_
 template <typename T>
 bool ArrayMat<T>::operator==(const Mat2<T> b)const
 {
-    if (r != 2 || c != 2)
+    if (rows != 2 || cols != 2)
         return false;
     else if (memcmp(v, b.getData(), 2 * 2 * sizeof(T)))
         return false;
@@ -631,7 +631,7 @@ bool ArrayMat<T>::operator==(const Mat2<T> b)const
 template <typename T>
 bool ArrayMat<T>::operator==(const Mat3<T> b)const
 {
-    if (r != 3 || c != 3)
+    if (rows != 3 || cols != 3)
         return false;
     else if (memcmp(v, b.getData(), 3 * 3 * sizeof(T)))
         return false;

@@ -304,7 +304,7 @@ void phLinkedList<T>::removeIndex(unsigned int index)
 	moveIndex(index);
 
 	if (current == temp)
-		removeCurrent()
+		removeCurrent();
 	else
 	{
 		removeCurrent();
