@@ -2,7 +2,7 @@
 // math_misc.hpp
 // Miscellaneous Math Functions
 // Author(s): Cory Douthat
-// Copyright (c) 2022 Cory Douthat, All Rights Reserved.
+// Copyright (c) 2025 Cory Douthat, All Rights Reserved.
 // *****************************************************************************************************************************
 
 #ifndef MATH_MISC_HPP_
@@ -11,11 +11,19 @@
 #include <stdlib.h>
 #define _USE_MATH_DEFINES	//For PI definition
 #include <cmath>
+#include <cstdint>
 #include <limits>
 
 #include "vec.hpp"
 #include "mat.hpp"
 #include "array_mat.hpp"
+
+// TODO: replace with C++ 17 std::clamp
+template<typename T>
+T clamp(T val, T min, T max) 
+{
+	return std::max(std::min(val, max), min);
+}
 
 
 // SolveQuadratic()
@@ -115,19 +123,19 @@ bool SolveCramer(const T *A_mat,const T *b_vec,unsigned int n,T *x_vec)
     if (det_A == T(0))
         return false;
 
-    // Matrix for temporary A with column replaced
+    // Matrix for temporary A with columin replaced
     T *Ai = new T[n * n];
     memcpy(Ai,A_mat,n * n * sizeof(T));
 
     for (unsigned int i = 0; i < n; i++)
     {
-        // Copy in b vector to column i
+        // Copy in b vector to columin i
         memcpy(&Ai[i * n],b_vec,n * sizeof(T));
 
         // Solve for xi
         x_vec[i] = Determinant(Ai,n) / det_A;
 
-        // Copy regular values back into column i
+        // Copy regular values back into columin i
         memcpy(&Ai[i * n],&A_mat[i * n],n * sizeof(T));
     }
 
@@ -160,12 +168,12 @@ bool SolveGaussElim(const T *A_mat, const T *b_vec, unsigned int n, T *x_vec)
 	// Reduce matrix to row echelon form using Gaussian Elimination and partial pivoting
 	for (unsigned int r = 0; r < n; r++)
 	{
-		// Pivot row 'r' (check for rows with larger absolute values in the pivot column)
+		// Pivot row 'r' (check for rows with larger absolute values in the pivot columin)
 		if (r < n - 1)	// Do not do this when on last row
 		{
 			for (unsigned int i = r + 1; i < n; i++)
 			{
-				// Check each successive row to see if absolute value in 'r'th column is larger
+				// Check each successive row to see if absolute value in 'r'th columin is larger
 				if (abs(A[r*n + row_index[i]]) > abs(A[r*n + row_index[r]]))
 				{
 					// Swap rows
@@ -183,16 +191,16 @@ bool SolveGaussElim(const T *A_mat, const T *b_vec, unsigned int n, T *x_vec)
 			return false;
 		}
 
-		// Reduce successive rows (eliminate columns below pivot of 'r')
+		// Reduce successive rows (eliminate columins below pivot of 'r')
 		if (r < n - 1)	// Do not do this when on last row
 		{
 			for (unsigned int i = r + 1; i < n; i++)	// ROWS
 			{
 				// Multiplication factor
 				T temp_mult = A[r*n + row_index[i]] / A[r*n + row_index[r]];
-				// First column set 0
+				// First columin set 0
 				A[r*n + row_index[i]] = (T)0;
-				// Addl columns
+				// Addl columins
 				for (unsigned int j = r + 1; j < n; j++)
 					A[j*n + row_index[i]] -= temp_mult * A[j*n + row_index[r]];
 				// b vector
@@ -265,6 +273,34 @@ Vec3<T> CalcBarycentricCoefficients(Vec3<T> p, Vec3<T> a, Vec3<T> b, Vec3<T> c)
 		temp.z = -temp.z;
 
 	return temp;
+}
+
+// Pack four normalized floats (0-1) in a 32-bit integer
+// Typically used for graphics applications - i.e 8-bit color vales
+// Input:	v = vector of four floats (0-1)
+// Return:  uint32_t - packed 32-bit integer
+uint32_t PackFloatInt4x8(Vec4f v)
+{
+	uint8_t temp = 0;
+	uint32_t result = 0;
+
+	for (unsigned int i = 0; i < 4; i++)
+	{
+		temp = round(clamp(v[i], 0.f, +1.f) * 255.0);
+
+		result |= static_cast<uint32_t>(temp) << (i * 8);
+	}
+
+	return result;
+}
+
+// Pack four normalized floats (0-1) in a 32-bit integer
+// Typically used for graphics applications - i.e 8-bit color vales
+// Input:	v = vector of four floats (0-1)
+// Return:  uint32_t - packed 32-bit integer
+uint32_t PackFloatInt4x8(Vec4d v)
+{
+	return PackFloatInt4x8(Vec4f(float(v.x), float(v.y), float(v.z), float(v.w)));
 }
 
 #endif
