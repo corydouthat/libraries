@@ -48,6 +48,7 @@ public:
 	bool insert(unsigned int index, const T& item);				// Insert item at index
 	unsigned int insertSorted(const T& item, bool order, bool dup);	// Insert item into sorted list
 
+	const T* getData()const { return data; }					// Get pointer to data
 	void copyData(const ArrayList<T>& b);						// Copy data, only allocate if needed
 
 	unsigned int push(const T& item) { return insert(count, item); }	// Push item on end
