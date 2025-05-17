@@ -51,7 +51,7 @@ public:
 	const T* getData()const { return data; }					// Get pointer to data
 	void copyData(const ArrayList<T>& b);						// Copy data, only allocate if needed
 
-	unsigned int push(const T& item) { return insert(count, item); }	// Push item on end
+	int push(const T& item) { insert(count, item) ? return count : return -1 ; }	// Push item on end
 	bool pop() { return remove(count - 1); }					// Pop/remove end item
 	
 	bool remove(unsigned int index);							// Remove item at index
