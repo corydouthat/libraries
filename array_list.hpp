@@ -47,13 +47,15 @@ public:
 	bool assignAll(const T& item);								// Assign value of all (any data type)
 
 	bool insert(unsigned int index, const T& item);				// Insert item at index
+	bool insertEmplace(unsigned int index, Args&&... args);		// Instantiate object in place
 	unsigned int insertSorted(const T& item, bool order, bool dup);	// Insert item into sorted list
+
+	int push(const T& item) { return (insert(count, item) ? count : -1); }	// Push item on end
+	bool pushEmplace(Args&&... args) { return (insertEmplace(count, args) ? count : -1); }	// Instantiate object in place at back
+	bool pop() { return remove(count - 1); }					// Pop/remove end item
 
 	const T* getData()const { return data; }					// Get pointer to data
 	void copyData(const ArrayList<T>& b);						// Copy data, only allocate if needed
-
-	int push(const T& item) { return (insert(count, item) ? count : -1); }	// Push item on end
-	bool pop() { return remove(count - 1); }					// Pop/remove end item
 	
 	bool remove(unsigned int index);							// Remove item at index
 
@@ -212,19 +214,10 @@ bool ArrayList<T>::insert(unsigned int index, const T& item)
 	if (index > count)
 		return false;
 
-	if (count == 0)
+	addOneCount();
+
+	if (count > 1)
 	{
-		// Empty
-		addOneCount();
-
-		data[0] = item;
-
-		return true;
-	}
-	else
-	{
-		addOneCount();
-
 		// Move items up
 		for (unsigned int i = count - 2; i >= index; i--)
 		{
@@ -233,12 +226,41 @@ bool ArrayList<T>::insert(unsigned int index, const T& item)
 			if (i == 0)
 				break;
 		}
-
-		data[index] = item;
-
-		return true;
 	}
+
+	data[index] = item;
+
+	return true;
 }
+
+// Instantiate object in place
+template <typename T>
+bool ArrayList<T>::insertEmplace(unsigned int index, Args&&... args)
+{
+	// Highest insert allowed is right after last item
+	if (index > count)
+		return false;
+
+	addOneCount();
+
+	if (count > 1)
+	{
+		// Move items up
+		for (unsigned int i = count - 2; i >= index; i--)
+		{
+			data[i] = data[i - 1];
+
+			if (i == 0)
+				break;
+		}
+	}
+
+	delete data[index];
+	data = new T(std::forward<Args>(args));
+
+	return true;
+}
+
 
 // Insert item into sorted list
 // List must be pre-sorted (TODO: add bool sorted variable)
