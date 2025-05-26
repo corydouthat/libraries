@@ -11,6 +11,7 @@
 
 #include <cstdlib>
 #include <vector>
+#include <utility>
 
 template <typename T>
 class ArrayList
@@ -47,11 +48,13 @@ public:
 	bool assignAll(const T& item);								// Assign value of all (any data type)
 
 	bool insert(unsigned int index, const T& item);				// Insert item at index
+	template <typename... Args>
 	bool insertEmplace(unsigned int index, Args&&... args);		// Instantiate object in place
 	unsigned int insertSorted(const T& item, bool order, bool dup);	// Insert item into sorted list
 
 	int push(const T& item) { return (insert(count, item) ? count : -1); }	// Push item on end
-	bool pushEmplace(Args&&... args) { return (insertEmplace(count, args) ? count : -1); }	// Instantiate object in place at back
+	template <typename... Args>
+	bool pushEmplace(Args&&... args);							// Instantiate object in place at back
 	bool pop() { return remove(count - 1); }					// Pop/remove end item
 
 	const T* getData()const { return data; }					// Get pointer to data
@@ -235,6 +238,7 @@ bool ArrayList<T>::insert(unsigned int index, const T& item)
 
 // Instantiate object in place
 template <typename T>
+template <typename... Args>
 bool ArrayList<T>::insertEmplace(unsigned int index, Args&&... args)
 {
 	// Highest insert allowed is right after last item
@@ -255,8 +259,8 @@ bool ArrayList<T>::insertEmplace(unsigned int index, Args&&... args)
 		}
 	}
 
-	delete data[index];
-	data = new T(std::forward<Args>(args));
+	delete &data[index];
+	data = new T(std::forward<Args>(args)...);
 
 	return true;
 }
@@ -312,6 +316,15 @@ unsigned int ArrayList<T>::insertSorted(const T& item, bool order, bool dup)
 		else
 			return i;
 	}
+}
+
+
+// Instantiate object in place at back
+template <typename T>
+template <typename... Args>
+bool ArrayList<T>::pushEmplace(Args&&... args) 
+{ 
+	return (insertEmplace(count, std::forward<Args>(args)...) ? count : -1); 
 }
 
 // Copy data, only allocate if needed
