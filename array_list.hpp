@@ -10,6 +10,7 @@
 #define ARRAY_LIST_HPP_
 
 #include <cstdlib>
+#include <vector>
 
 template <typename T>
 class ArrayList
@@ -62,6 +63,11 @@ public:
 	// READ FUNCTIONS
 	T& get(unsigned int index) { return (*this)[index]; }		// Get reference to item at index
 	T& getLast() { return (*this)[count - 1]; }					// Get reference to end item
+
+
+	// std::vector functions
+	ArrayList(const std::vector<T> &copy) : ArrayList() { *this = copy; }	// Constructor: copy
+	const ArrayList<T>& operator =(const std::vector<T>& b);	// Operator =
 };
 
 // Constructor: array
@@ -329,5 +335,23 @@ void ArrayList<T>::free()
 
 	delete[] data;
 }
+
+
+// std::vector functions
+template <typename T>
+const ArrayList<T>& ArrayList<T>::operator =(const std::vector<T>& b)
+{
+	clear();
+
+	if (b.size() > 0)
+	{
+		allocate(b.size());
+		count = b.size();
+		memcpy(data, b.data(), count * sizeof(T));
+	}
+
+	return *this;
+}
+
 
 #endif
