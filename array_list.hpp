@@ -6,6 +6,16 @@
 // Copyright (c) 2022 Cory Douthat, All Rights Reserved.
 // *****************************************************************************************************************************
 
+
+// TODO: allocate() already zeros out classes to prevent destructor from being called, 
+//		 which would cause double deletion for pointers, but what about these cases?
+//			1 Structs with destructors
+// 		    2 Objects with copy constructors / overloaded assignment operators that make copies of pointer memory
+//			3 Nested ArrayList objects - could copy all the data without freeing the old?
+// For 2 and 3 - memcpy should take care of that since it bypasses assignment operators and copy constructors?
+// But, for 1 - we don't currently have coverage?
+
+
 #ifndef ARRAY_LIST_HPP_
 #define ARRAY_LIST_HPP_
 
@@ -58,11 +68,11 @@ public:
 	bool pop() { return remove(count - 1); }					// Pop/remove end item
 
 	const T* getData()const { return data; }					// Get pointer to data
-	void copyData(const ArrayList<T>& b);						// Copy data, only allocate if needed
+	//void copyData(const ArrayList<T>& b);						// TODO: see notes above implementation
 	
 	bool remove(unsigned int index);							// Remove item at index
 
-	void clear() { count = 0; }									// Clear list
+	//void clear() { count = 0; }								// Clear list (disabled for now - could be dangerous)
 	void free();												// Clear and de-allocate memory
 
 	// READ FUNCTIONS
@@ -91,7 +101,7 @@ inline ArrayList<T>::ArrayList(const T in[], unsigned int len) : ArrayList()
 template <typename T>
 const ArrayList<T>& ArrayList<T>::operator =(const ArrayList<T>& b)
 {
-	clear();
+	free();
 
 	allocate(b.size);
 
@@ -103,6 +113,7 @@ const ArrayList<T>& ArrayList<T>::operator =(const ArrayList<T>& b)
 
 	return *this;
 }
+
 
 // Update list count
 template <typename T>
@@ -122,6 +133,10 @@ bool ArrayList<T>::updateCount(unsigned int new_count)
 template <typename T>
 bool ArrayList<T>::allocate(unsigned int new_size)
 {
+	// Note: be very careful with classes, structs, or pointers
+	//	     the copy / delete operations below could cause pointer double-deletion, etc.
+
+
 	if (new_size <= size)
 		return false;
 	else
@@ -152,8 +167,8 @@ bool ArrayList<T>::allocate(unsigned int new_size)
 			temp = data;
 			data = new T[new_size];
 			memcpy(data, temp, count * sizeof(T));
-			if (std::is_class<T>::value)	// Is T a class?
-				memset(temp, 0, count * sizeof(T));	// Prevent delete from calling class destructors
+			if (std::is_destructible<T>::value)		// Does T have a destructor? If so...
+				memset(temp, 0, count * sizeof(T));	// prevent delete from calling destructors
 			delete[] temp;
 		}
 		else
@@ -219,19 +234,22 @@ bool ArrayList<T>::insert(unsigned int index, const T& item)
 
 	addOneCount();
 
+	// TODO: make a shiftData() function since this is done in multiple places?
+	// TODO: could make this more efficient by incorporating the data shift into the re-allocation step
 	if (count > 1)
 	{
 		// Move items up
-		for (unsigned int i = count - 2; i >= index; i--)
+		for (unsigned int i = count - 1; i > index; i--)
 		{
-			data[i] = data[i - 1];
+			// Use memcpy to avoid calling assignment operator
+			memcpy(&data[i], &data[i - 1], sizeof(T));
 
 			if (i == 0)
 				break;
 		}
 	}
 
-	data[index] = item;
+	data[index] = item;		// A copy constructor is expected here
 
 	return true;
 }
@@ -247,20 +265,22 @@ bool ArrayList<T>::insertEmplace(unsigned int index, Args&&... args)
 
 	addOneCount();
 
+	// TODO: make a shiftData() function since this is done in multiple places?
+	// TODO: could make this more efficient by incorporating the data shift into the re-allocation step
 	if (count > 1)
 	{
 		// Move items up
-		for (unsigned int i = count - 2; i >= index; i--)
+		for (unsigned int i = count - 1; i > index; i--)
 		{
-			data[i] = data[i - 1];
+			// Use memcpy to avoid calling assignment operator
+			memcpy(&data[i], &data[i - 1], sizeof(T));
 
 			if (i == 0)
 				break;
 		}
 	}
 	
-	data[index].~T();
-	new (&data[index]) T(std::forward<Args>(args)...);
+	new (&data[index]) T(std::forward<Args>(args)...);	// Using "placement new" feature
 
 	return true;
 }
@@ -328,20 +348,23 @@ int ArrayList<T>::pushEmplace(Args&&... args)
 }
 
 // Copy data, only allocate if needed
-template <typename T>
-void ArrayList<T>::copyData(const ArrayList<T>& b)
-{
-	clear();
-
-	if (b.count > size)
-		allocate(b.getSize());
-
-	if (!(b.isEmpty()))
-	{
-		count = b.count;
-		memcpy(data, b.data, count * sizeof(T));
-	}
-}
+// TODO: disabling for now - it's unclear how this was meant to be used
+//	  changed assignment operators to free data first, should this do the same?
+//	  could this have been meant to copy data onto the end instead of replacing?
+//template <typename T>
+//void ArrayList<T>::copyData(const ArrayList<T>& b)
+//{
+//	clear(); // Or free();??
+//
+//	if (b.count > size)
+//		allocate(b.getSize());
+//
+//	if (!(b.isEmpty()))
+//	{
+//		count = b.count;
+//		memcpy(data, b.data, count * sizeof(T));
+//	}
+//}
 
 // Remove item at index
 template <typename T>
@@ -366,9 +389,12 @@ bool ArrayList<T>::remove(unsigned int index)
 template <typename T>
 void ArrayList<T>::free()
 {
-	clear();
+	if (data)
+		delete[] data;	// Calls destructors
 
-	delete[] data;
+	data = nullptr;
+	count = 0;
+	size = 0;
 }
 
 
@@ -376,7 +402,7 @@ void ArrayList<T>::free()
 template <typename T>
 const ArrayList<T>& ArrayList<T>::operator =(const std::vector<T>& b)
 {
-	clear();
+	free();
 
 	if (b.size() > 0)
 	{
