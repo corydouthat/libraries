@@ -52,9 +52,9 @@ public:
 	bool insertEmplace(unsigned int index, Args&&... args);		// Instantiate object in place
 	unsigned int insertSorted(const T& item, bool order, bool dup);	// Insert item into sorted list
 
-	int push(const T& item) { return (insert(count, item) ? count : -1); }	// Push item on end
+	int push(const T& item) { return (insert(count, item) ? getCount() - 1 : -1); }	// Push item on end
 	template <typename... Args>
-	bool pushEmplace(Args&&... args);							// Instantiate object in place at back
+	int pushEmplace(Args&&... args);							// Instantiate object in place at back
 	bool pop() { return remove(count - 1); }					// Pop/remove end item
 
 	const T* getData()const { return data; }					// Get pointer to data
@@ -258,9 +258,9 @@ bool ArrayList<T>::insertEmplace(unsigned int index, Args&&... args)
 				break;
 		}
 	}
-
-	delete &data[index];
-	data = new T(std::forward<Args>(args)...);
+	
+	data[index].~T();
+	new (&data[index]) T(std::forward<Args>(args)...);
 
 	return true;
 }
@@ -322,9 +322,9 @@ unsigned int ArrayList<T>::insertSorted(const T& item, bool order, bool dup)
 // Instantiate object in place at back
 template <typename T>
 template <typename... Args>
-bool ArrayList<T>::pushEmplace(Args&&... args) 
+int ArrayList<T>::pushEmplace(Args&&... args) 
 { 
-	return (insertEmplace(count, std::forward<Args>(args)...) ? count : -1); 
+	return (insertEmplace(count, std::forward<Args>(args)...) ? getCount() - 1 : -1);
 }
 
 // Copy data, only allocate if needed
