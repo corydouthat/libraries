@@ -68,11 +68,11 @@ public:
 	bool pop() { return remove(count - 1); }					// Pop/remove end item
 
 	const T* getData()const { return data; }					// Get pointer to data
-	//void copyData(const ArrayList<T>& b);						// TODO: see notes above implementation
+	void copyData(const ArrayList<T>& b);						// Copy data, allocate only if necessary
 	
 	bool remove(unsigned int index);							// Remove item at index
 
-	//void clear() { count = 0; }								// Clear list (disabled for now - could be dangerous)
+	void clear();												// Clear list
 	void free();												// Clear and de-allocate memory
 
 	// READ FUNCTIONS
@@ -347,24 +347,26 @@ int ArrayList<T>::pushEmplace(Args&&... args)
 	return (insertEmplace(count, std::forward<Args>(args)...) ? getCount() - 1 : -1);
 }
 
-// Copy data, only allocate if needed
-// TODO: disabling for now - it's unclear how this was meant to be used
-//	  changed assignment operators to free data first, should this do the same?
-//	  could this have been meant to copy data onto the end instead of replacing?
-//template <typename T>
-//void ArrayList<T>::copyData(const ArrayList<T>& b)
-//{
-//	clear(); // Or free();??
-//
-//	if (b.count > size)
-//		allocate(b.getSize());
-//
-//	if (!(b.isEmpty()))
-//	{
-//		count = b.count;
-//		memcpy(data, b.data, count * sizeof(T));
-//	}
-//}
+// Empty array and copy data from another array, only allocate if needed
+// TODO: how is this different from the assignment operator? Just doesn't re-allocate?
+template <typename T>
+void ArrayList<T>::copyData(const ArrayList<T>& b)
+{
+	// Note: This can be dangerous if copying objects with pointers. 
+	//	     Most common issues is double deletion.
+	//static_assert(!std::is_class_v<T>, "ArrayList<T>::copyData disabled for class/struct types due to pointer duplication risk");
+
+	clear();
+
+	if (b.count > size)
+		allocate(b.getSize());
+
+	if (!(b.isEmpty()))
+	{
+		count = b.count;
+		memcpy(data, b.data, count * sizeof(T));
+	}
+}
 
 // Remove item at index
 template <typename T>
@@ -384,6 +386,23 @@ bool ArrayList<T>::remove(unsigned int index)
 		return true;
 	}
 }
+
+
+// Clear list, but keep memory
+template <typename T>
+void ArrayList<T>::clear()
+{
+	for (unsigned int i = 0; i < count; i++)
+	{
+		if (std::is_destructible<T>::value)	
+			data[i].~T();
+	}
+
+	memset(data, 0, count * sizeof(T));
+
+	count = 0;
+}
+
 
 // Clear and de-allocate memory
 template <typename T>

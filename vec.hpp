@@ -58,7 +58,7 @@ public:
 	const Vec2<T>& operator -=(const Vec2<T> &b) { return *this = *this - b; }	// Operator -=
 	// Scalar Operators
 	Vec2<T> operator *(T s)const;											// Operator * (scalar)
-	template <typename sT> friend Vec2<sT> operator *(sT a, const Vec2<sT> &b);	// Operator * (scalar)
+	friend Vec2<T> operator *(T s, const Vec2<T>& b);						// Operator * (scalar)
 	Vec2<T> operator /(T s)const;											// Operator / (scalar)
 	const Vec2<T>& operator *=(T s) { return *this = *this * s; }			// Operator *= (scalar)
 	const Vec2<T>& operator /=(T s) { return *this = *this / s; }			// Operator /= (scalar)
@@ -114,7 +114,7 @@ public:
 	const Vec3<T>& operator %=(const Vec3<T> &b) { return *this = *this % b; }	// Cross Product Operator %=
 	// Scalar Operators
 	Vec3<T> operator *(T s)const;											// Operator * (scalar)
-	template <typename sT> friend Vec3<sT> operator *(sT a, const Vec3<sT> &b);	// Operator * (scalar)
+	friend Vec3<T> operator *(T s, const Vec3<T>& b);						// Operator * (scalar)
 	Vec3<T> operator /(T s)const;											// Operator / (scalar)
 	const Vec3<T>& operator *=(T s) { return *this = *this * s; }			// Operator *= (scalar)
 	const Vec3<T>& operator /=(T s) { return *this = *this / s; }			// Operator /= (scalar)
@@ -169,7 +169,7 @@ public:
     const Vec4<T>& operator -=(const Vec4<T> &b) { return *this = *this - b; }	// Operator -=
     // Scalar Operators
     Vec4<T> operator *(T s)const;											// Operator * (scalar)
-    template <typename sT> friend Vec4<sT> operator *(sT a,const Vec4<sT> &b);	// Operator * (scalar)
+	friend Vec4<T> operator *(T s, const Vec4<T>& b);						// Operator * (scalar)
     Vec4<T> operator /(T s)const;											// Operator / (scalar)
     const Vec4<T>& operator *=(T s) { return *this = *this * s; }			// Operator *= (scalar)
     const Vec4<T>& operator /=(T s) { return *this = *this / s; }			// Operator /= (scalar)
@@ -442,7 +442,7 @@ Vec4<T> Vec4<T>::operator *(T s)const
 // Vec2 - Non-Member Friend Operator
 // Operator * (scalar * Vec2)
 template <typename T>
-Vec2<T> operator *(T s,const Vec2<T> &b)
+Vec2<T> operator *(T s, const Vec2<T> &b)
 {
 	return Vec2<T>(b.x * s,b.y * s);
 }
