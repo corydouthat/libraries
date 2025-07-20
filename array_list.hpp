@@ -54,8 +54,8 @@ public:
 	bool allocate(unsigned int new_size);						// Re-allocate to new size
 
 	bool set(unsigned int index, const T& item);				// Set value at index
-	bool setAll(int item);										// Set value of all
-	bool assignAll(const T& item);								// Assign value of all (any data type)
+	bool setAllInt(int item);									// Set value of all
+	bool setAll(const T& item);									// Assign value of all (any data type)
 
 	bool insert(unsigned int index, const T& item);				// Insert item at index
 	template <typename... Args>
@@ -195,7 +195,7 @@ bool ArrayList<T>::set(unsigned int index, const T& item)
 
 // Set value of all (integer)
 template <typename T>
-bool ArrayList<T>::setAll(int item)
+bool ArrayList<T>::setAllInt(int item)
 {
 	if (count == 0)
 		return false;
@@ -208,7 +208,7 @@ bool ArrayList<T>::setAll(int item)
 
 // Assign value of all (any data type)
 template <typename T>
-bool ArrayList<T>::assignAll(const T& item)
+bool ArrayList<T>::setAll(const T& item)
 {
 	if (count == 0)
 		return false;
