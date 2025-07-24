@@ -51,7 +51,7 @@ public:
 	// DATA CONTROL FUNCTIONS
 	bool updateCount(unsigned int new_count);					// Update list count
 	bool addOneCount() { return updateCount(count + 1); }		// Add one to count (and re-allocate if necessary)
-	bool allocate(unsigned int new_size);						// Re-allocate to new size
+	bool allocate(unsigned int new_size, bool downsize = false);	// Re-allocate to new size
 
 	bool set(unsigned int index, const T& item);				// Set value at index
 	bool setAllInt(int item);									// Set value of all
@@ -131,16 +131,18 @@ bool ArrayList<T>::updateCount(unsigned int new_count)
 
 // Re-allocate to new size
 template <typename T>
-bool ArrayList<T>::allocate(unsigned int new_size)
+bool ArrayList<T>::allocate(unsigned int new_size, bool downsize)
 {
 	// Note: be very careful with classes, structs, or pointers
 	//	     the copy / delete operations below could cause pointer double-deletion, etc.
 
-
-	if (new_size <= size)
+	if (new_size <= size && !downsize)
 		return false;
 	else
 	{
+		if (new_size < count)
+			new_size = count;
+
 		T* temp;
 		unsigned int remainder;
 
@@ -155,6 +157,7 @@ bool ArrayList<T>::allocate(unsigned int new_size)
 			new_size = 1000;
 		else
 		{
+			// TODO: doesn't scale well for very large arrays
 			remainder = new_size % 1000;
 
 			if (remainder > 0)

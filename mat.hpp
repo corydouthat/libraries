@@ -116,6 +116,7 @@ public:
 	void decomposeRotScale(Mat3<T>* rot, Mat3<T>* scale)const;	// Decompose
 	T get(unsigned int col,unsigned int row)const;		// Get element
 	Mat2<T> getSub()const;								// Get 2x2 sub-matrix (upper-left)
+	Vec3<T> getTransl()const;							// Get translation vector (last column)
 	void set(unsigned int col,unsigned int row,T s);	// Set element
 	const T* getData()const;							// Get pointer to raw data
 	void load(const T* data_in);						// Load in data
@@ -199,6 +200,7 @@ public:
 	void decomposeTransfScale(Mat4<T>* transf, Mat4<T>* scale)const;	// Decompose
     T get(unsigned int col,unsigned int row)const;		// Get element
 	Mat3<T> getSub()const;								// Get 3x3 sub-matrix (upper-left)
+	Vec3<T> getTransl()const;							// Get translation vector (last column)
     void set(unsigned int col,unsigned int row,T s);	// Set element
     const T* getData()const;							// Get pointer to raw data
     void load(const T* data_in);						// Load in data
@@ -1195,7 +1197,6 @@ Mat2<T> Mat3<T>::getSub()const
 
 	return temp;
 }
-
 // Mat4
 // Get 3x3 sub-matrix (upper-left)
 template <typename T>
@@ -1213,6 +1214,21 @@ Mat3<T> Mat4<T>::getSub()const
 	temp.set(2, 2, get(2, 2));
 
 	return temp;
+}
+
+// Mat3
+// Get translation vector (last column)
+template <typename T>
+Vec3<T> Mat3<T>::getTransl()const
+{
+	return Vec3<T>(v[6], v[7], v[8]);
+}
+// Mat4
+// Get translation vector (last column)
+template <typename T>
+Vec3<T> Mat4<T>::getTransl()const
+{
+	return Vec3<T>(v[12], v[13], v[14]);
 }
 
 // Mat2
