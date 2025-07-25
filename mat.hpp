@@ -112,8 +112,11 @@ public:
 	T det()const;										// Determinant
 	Mat3<T> transp()const;								// Transpose
 	Mat3<T> inv()const;									// Inverse
+	void decomposeRotScale(Mat3<T>* rot, Vec3<T>* scale)const;	// Decompose
+	void decomposeRotScale(Mat3<T>* rot, Mat3<T>* scale)const;	// Decompose
 	T get(unsigned int col,unsigned int row)const;		// Get element
 	Mat2<T> getSub()const;								// Get 2x2 sub-matrix (upper-left)
+	Vec3<T> getTransl()const;							// Get translation vector (last column)
 	void set(unsigned int col,unsigned int row,T s);	// Set element
 	const T* getData()const;							// Get pointer to raw data
 	void load(const T* data_in);						// Load in data
@@ -192,8 +195,12 @@ public:
     T det()const;										// Determinant
     Mat4<T> transp()const;								// Transpose
     Mat4<T> inv()const;									// Inverse
+	void decomposeRotScale(Mat3<T>* rot, Vec3<T>* scale)const;			// Decompose
+	void decomposeTransfScale(Mat4<T>* transf, Vec3<T>* scale)const;	// Decompose
+	void decomposeTransfScale(Mat4<T>* transf, Mat4<T>* scale)const;	// Decompose
     T get(unsigned int col,unsigned int row)const;		// Get element
 	Mat3<T> getSub()const;								// Get 3x3 sub-matrix (upper-left)
+	Vec3<T> getTransl()const;							// Get translation vector (last column)
     void set(unsigned int col,unsigned int row,T s);	// Set element
     const T* getData()const;							// Get pointer to raw data
     void load(const T* data_in);						// Load in data
@@ -439,7 +446,7 @@ const Mat4<T>& Mat4<T>::operator =(const Mat4<T2>& b)
 template <typename T>
 bool Mat2<T>::operator ==(const Mat2<T>& b)const
 {
-	if (memcmpy(this,&b,sizeof(*this)) == 0)
+	if (memcmp(this,&b,sizeof(*this)) == 0)
 		return true;
 	else
 		return false;
@@ -449,7 +456,7 @@ bool Mat2<T>::operator ==(const Mat2<T>& b)const
 template <typename T>
 bool Mat3<T>::operator ==(const Mat3<T>& b)const
 {
-	if (memcmpy(this,&b,sizeof(*this)) == 0)
+	if (memcmp(this,&b,sizeof(*this)) == 0)
 		return true;
 	else
 		return false;
@@ -459,7 +466,7 @@ bool Mat3<T>::operator ==(const Mat3<T>& b)const
 template <typename T>
 bool Mat4<T>::operator ==(const Mat4<T>& b)const
 {
-    if (memcmpy(this,&b,sizeof(*this)) == 0)
+    if (memcmp(this,&b,sizeof(*this)) == 0)
         return true;
     else
         return false;
@@ -1091,6 +1098,67 @@ Mat4<T> Mat4<T>::inv()const
 	return temp;
 }
 
+// Mat3
+// Decompose into rotation and scale factors (vector)
+template <typename T>
+void Mat3<T>::decomposeRotScale(Mat3<T>* rot, Vec3<T>* scale)const
+{
+	T sx, sy, sz;
+	sx = sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+	sy = sqrt(v[3] * v[3] + v[4] * v[4] + v[5] * v[5]);
+	sz = sqrt(v[6] * v[6] + v[7] * v[7] + v[8] * v[8]);
+
+	scale->x = sx;
+	scale->y = sy;
+	scale->z = sz;
+
+	rot->v[0] = v[0] / sx;
+	rot->v[1] = v[1] / sx;
+	rot->v[2] = v[2] / sx;
+	rot->v[3] = v[3] / sy;
+	rot->v[4] = v[4] / sy;
+	rot->v[5] = v[5] / sy;
+	rot->v[6] = v[6] / sz;
+	rot->v[7] = v[7] / sz;
+	rot->v[8] = v[8] / sz;
+}
+// Mat3
+// Decompose into rotation and scale matrices
+template <typename T>
+void Mat3<T>::decomposeRotScale(Mat3<T>* rot, Mat3<T>* scale)const
+{
+	Vec3<T> scale_v;
+
+	decomposeTransfScale(rot, &scale_v);
+
+	*scale = Mat3<T>::scale(scale_v);
+}
+// Mat4
+// Decompose into rotation (3x3) and scale factors (vector)
+template <typename T>
+void Mat4<T>::decomposeRotScale(Mat3<T>* rot, Vec3<T>* scale)const
+{
+	getSub().decomposeRotScale(rot, scale);
+}
+// Mat4
+// Decompose into transform and scale factors (vector)
+template <typename T>
+void Mat4<T>::decomposeTransfScale(Mat4<T>* transf, Vec3<T>* scale)const
+{
+	Mat3<T> rot;
+	getSub().decomposeRotScale(&rot, scale);
+	*transf = Mat4<T>::transf(rot, Vec4<T>(v[12], v[13], v[14], v[15]));
+}
+// Mat4
+// Decompose into transform and scale matrices
+template <typename T>
+void Mat4<T>::decomposeTransfScale(Mat4<T>* transf, Mat4<T>* scale)const
+{
+	Vec3<T> scale_v;
+	decomposeTransfScale(transf, &scale_v);
+	*scale = Mat4<T>(Mat3<T>::scale(scale_v));
+}
+
 // Mat2
 // Get Element
 template <typename T>
@@ -1129,7 +1197,6 @@ Mat2<T> Mat3<T>::getSub()const
 
 	return temp;
 }
-
 // Mat4
 // Get 3x3 sub-matrix (upper-left)
 template <typename T>
@@ -1147,6 +1214,21 @@ Mat3<T> Mat4<T>::getSub()const
 	temp.set(2, 2, get(2, 2));
 
 	return temp;
+}
+
+// Mat3
+// Get translation vector (last column)
+template <typename T>
+Vec3<T> Mat3<T>::getTransl()const
+{
+	return Vec3<T>(v[6], v[7], v[8]);
+}
+// Mat4
+// Get translation vector (last column)
+template <typename T>
+Vec3<T> Mat4<T>::getTransl()const
+{
+	return Vec3<T>(v[12], v[13], v[14]);
 }
 
 // Mat2
@@ -1619,7 +1701,7 @@ Mat3<T> Mat3<T>::rot(const T &theta,const Vec3<T> &axis)
 }
 
 // Mat3
-// Static 2D Transformation Matrix Generator: 2x2 matrix + 3D vector (last element usually 1)
+// 2D Transformation Matrix Generator: 2x2 matrix + 3D vector (last element usually 1)
 template <typename T>
 Mat3<T> Mat3<T>::transf(const Mat2<T> &r,const Vec3<T> &t)
 {
@@ -1630,9 +1712,9 @@ Mat3<T> Mat3<T>::transf(const Mat2<T> &r,const Vec3<T> &t)
 	return temp;
 }
 // Mat4
-// Static 3D Transformation Matrix Generator: 3x3 matrix + 4D vector (last element usually 1)
+// 3D Transformation Matrix Generator: 3x3 matrix + 4D vector (last element usually 1)
 template <typename T>
-static Mat4<T> Mat4<T>::transf(const Mat3<T> &r,const Vec4<T> &t)
+Mat4<T> Mat4<T>::transf(const Mat3<T> &r,const Vec4<T> &t)
 {
     Mat4<T> temp(r);
     temp.v[12] = t.x;
@@ -1643,7 +1725,7 @@ static Mat4<T> Mat4<T>::transf(const Mat3<T> &r,const Vec4<T> &t)
 }
 
 // Mat3
-// Static 2D Transformation Matrix Generator: 2x2 matrix + 2D vector (last element 1)
+// 2D Transformation Matrix Generator: 2x2 matrix + 2D vector (last element 1)
 template <typename T>
 Mat3<T> Mat3<T>::transf(const Mat2<T> &r,const Vec2<T> &t)
 {
@@ -1653,7 +1735,7 @@ Mat3<T> Mat3<T>::transf(const Mat2<T> &r,const Vec2<T> &t)
 	return temp;
 }
 // Mat4
-// Static 3D Transformation Matrix Generator: 3x3 matrix + 3D vector (last element 1)
+// 3D Transformation Matrix Generator: 3x3 matrix + 3D vector (last element 1)
 template <typename T>
 Mat4<T> Mat4<T>::transf(const Mat3<T> &r,const Vec3<T> &t)
 {
@@ -1664,7 +1746,7 @@ Mat4<T> Mat4<T>::transf(const Mat3<T> &r,const Vec3<T> &t)
     return temp;
 }
 // Mat3
-// Static 2D Transformation Matrix Generator: rotation + 2D vector (last element 1)
+// 2D Transformation Matrix Generator: rotation + 2D vector (last element 1)
 template <typename T>
 Mat3<T> Mat3<T>::transf(T theta, Vec2<T>& t)
 {
