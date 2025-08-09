@@ -129,6 +129,7 @@ public:
 	static T angle(const Vec3<T> &a, const Vec3<T> &b) { return a.angle(b); }	// Angle between vectors (static)
 	static T cross(const Vec3<T> &a, const Vec3<T> &b) { return a % b; }		// Cross Product (static)
 	static T dot(const Vec3<T> &a, const Vec3<T> &b) { return a * b; }			// Dot Product (static)
+	static Vec3<T> perpendicular(const Vec3<T>& a, const Vec3<T>& b);			// Find perpendicular unit vector
 };
 
 template <typename T = float>
@@ -570,6 +571,26 @@ template <typename T>
 bool Vec4<T>::similar(const Vec4<T> &b,T margin)const
 {
     return ((x - b.x <= margin) && (y - b.y <= margin) && (z - b.z <= margin) && (w - b.w <= margin));
+}
+
+// Vec3
+// Find perpendicular unit vector
+template <typename T>
+Vec3<T> Vec3<T>::perpendicular(const Vec3<T>& a, const Vec3<T>& b)
+{
+	Vec3<T> temp = a % b;
+
+	if (temp != Vec3<T>(T(0), T(0), T(0)))
+		return temp.norm();
+	else
+	{
+		// a and b are same direction or opposite
+		// Any vector on plane of 'a' will work
+		if ((temp = a % Vec3<T>(0, T(1), 0)) != Vec3<T>(T(0), T(0), T(0)))
+			return temp.norm();
+		else
+			return (a % Vec3<T>(0, 0, T(1))).norm();
+	}
 }
 
 #endif

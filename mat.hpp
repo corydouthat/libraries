@@ -11,8 +11,9 @@
 #ifndef MAT_HPP_
 #define MAT_HPP_
 
-#define _USE_MATH_DEFINES	//For PI definition
+#define _USE_MATH_DEFINES	//For M_PI definition
 #include <cmath>
+#include <numbers>
 #include <cstring>
 
 #include "vec.hpp"
@@ -141,11 +142,14 @@ public:
 	static Mat3<T> transl(const Vec2<T> &t);						// 2D translation matrix from 2D vector (3rd element 1)
 	// 3D Transformation Matrix Generators
 	static Mat3<T> rot(const Vec3<T> &axis);						// 3D rot matrix around axis (magnitude as radians)
-	static Mat3<T> rot(const T &theta,const Vec3<T> &axis);			// 3D rot matrix theta radians around normalized axis
+	static Mat3<T> rot(const T &theta, const Vec3<T> &axis);		// 3D rot matrix theta radians around normalized axis
+	static Mat3<T> rot(const Vec3<T>& a, const Vec3<T>& b);			// 3D rot matrix from vector a to b
 	static Mat3<T> scale(const Vec3<T> &t);							// 3D scale matrix from 3D vector
-	static Mat3<T> transf(const Mat2<T> &r,const Vec3<T> &t);		// 2D transform matrix from 2D mat + 3D vector
-	static Mat3<T> transf(const Mat2<T> &r,const Vec2<T> &t);		// 2D transform matrix from 2D mat + 2D vector
+	static Mat3<T> transf(const Mat2<T> &r, const Vec3<T> &t);		// 2D transform matrix from 2D mat + 3D vector
+	static Mat3<T> transf(const Mat2<T> &r, const Vec2<T> &t);		// 2D transform matrix from 2D mat + 2D vector
 	static Mat3<T> transf(T theta, Vec2<T>& t);						// 2D transform matrix from rotation and translation
+	// Other
+	static Mat3<T> skewSymCross(Vec3<T> v);							// Generate skew-symmetric (cross product) matrix from vector
 #endif
 
 #ifdef QUAT_HPP_
@@ -1701,6 +1705,29 @@ Mat3<T> Mat3<T>::rot(const T &theta,const Vec3<T> &axis)
 }
 
 // Mat3
+// Static 3D Rotation Matrix Generator: from vector a to b
+// Angle in radians
+template <typename T>
+Mat3<T> Mat3<T>::rot(const Vec3<T>& a, const Vec3<T>& b)
+{
+	Vec3<T> v = a.norm() % b.norm();
+	T c = a.norm() * b.norm();
+
+	// a = b case
+	if (v == Vec3<T>(0, 0, 0))
+		return Mat3<T>::ident();
+
+	// a opposite b case
+	// TODO: implement a threshold
+	if (c + T(1) == T(0))
+		return Mat3<T>::rot(T(std::numbers::pi), Vec3<T>::perpendicular(a, b));
+
+	Mat3<T> temp = Mat3<T>::skewSymCross(v);
+
+	return Mat3<T>::ident() + temp + (temp * temp) * (T(1) / (T(1) + c));
+}
+
+// Mat3
 // 2D Transformation Matrix Generator: 2x2 matrix + 3D vector (last element usually 1)
 template <typename T>
 Mat3<T> Mat3<T>::transf(const Mat2<T> &r,const Vec3<T> &t)
@@ -1765,6 +1792,18 @@ Mat4<T> Mat4<T>::transf(const Mat3<T>& trf)
 	temp.v[5] = trf.v[4];
 	temp.v[12] = trf.v[6];
 	temp.v[13] = trf.v[7];
+	return temp;
+}
+
+// Mat3
+// Generate skew-symmetric (cross) matrix from vector
+template <typename T>
+Mat3<T> Mat3<T>::skewSymCross(Vec3<T> v)
+{
+	Mat3<T> temp(T(0));
+	temp.v[1] = v.z;	temp.v[2] = -v.y;
+	temp.v[3] = -v.z;	temp.v[5] = v.x;
+	temp.v[6] = v.y;	temp.v[7] = -v.x;
 	return temp;
 }
 
