@@ -1320,7 +1320,7 @@ Mat2<T> Mat2<T>::zero()
 template <typename T>
 Mat3<T> Mat3<T>::zero()
 {
-	return Mat3<T>(0);
+	return Mat3<T>::zero();
 }
 // Mat4
 // Static Zero Matrix Generator
