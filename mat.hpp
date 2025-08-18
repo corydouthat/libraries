@@ -1313,14 +1313,14 @@ void Mat4<T>::load(const T* data_in)
 template <typename T>
 Mat2<T> Mat2<T>::zero()
 {
-	return Mat2<T>(0);
+	return Mat2<T>(T(0));
 }
 // Mat3
 // Static Zero Matrix Generator
 template <typename T>
 Mat3<T> Mat3<T>::zero()
 {
-	return Mat3<T>::zero();
+	return Mat3<T>(T(0));
 }
 // Mat4
 // Static Zero Matrix Generator
