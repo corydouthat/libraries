@@ -3,17 +3,8 @@
 // Array List Template Class
 // Self-resizing dynamic array
 // Author(s): Cory Douthat
-// Copyright (c) 2022 Cory Douthat, All Rights Reserved.
+// Copyright (c) 2025 Cory Douthat, All Rights Reserved.
 // *****************************************************************************************************************************
-
-
-// TODO: allocate() already zeros out classes to prevent destructor from being called, 
-//		 which would cause double deletion for pointers, but what about these cases?
-//			1 Structs with destructors
-// 		    2 Objects with copy constructors / overloaded assignment operators that make copies of pointer memory
-//			3 Nested ArrayList objects - could copy all the data without freeing the old?
-// For 2 and 3 - memcpy should take care of that since it bypasses assignment operators and copy constructors?
-// But, for 1 - we don't currently have coverage?
 
 
 #ifndef ARRAY_LIST_HPP_
@@ -22,6 +13,8 @@
 #include <cstdlib>
 #include <vector>
 #include <utility>
+#include <type_traits>
+#include <new>
 
 template <typename T>
 class ArrayList
@@ -33,13 +26,17 @@ private:
 public:
 	// CONSTRUCTORS AND DESTRUCTOR
 	ArrayList() : data(nullptr), count(0), size(0) {}			// Constructor: default
+	//ArrayList(const ArrayList<T>& copy);						// Constructor: copy
+	ArrayList(ArrayList<T>&& other) noexcept;					// Constructor: move (rvalue)
 	ArrayList(unsigned int c) : ArrayList() { allocate(c); }	// Constructor: w/ allocation
-	ArrayList(const ArrayList<T>& copy) : ArrayList() { *this = copy; }	// Constructor: copy
 	ArrayList(const T in[], unsigned int len);					// Constructor: array
 	~ArrayList() { free(); }									// Destructor
 
 	// OPERATORS
-	const ArrayList<T>& operator =(const ArrayList<T> &b);		// Operator =
+	// Disable assignment operator for non-copyable types
+	typename std::enable_if<std::is_copy_constructible_v<T>, const ArrayList<T>&>
+		operator=(const ArrayList<T>& b);						// Operator =
+	const ArrayList<T>& operator =(ArrayList<T>&& other) noexcept;	// Operator (move rvalue)
 	T& operator [](unsigned int i) { return data[i]; }			// Operator []
 	const T& operator [](unsigned int i)const { return data[i]; }	// Operator [] (const)
 
@@ -53,19 +50,36 @@ public:
 	bool addOneCount() { return updateCount(count + 1); }		// Add one to count (and re-allocate if necessary)
 	bool allocate(unsigned int new_size, bool downsize = false);	// Re-allocate to new size
 
-	bool set(unsigned int index, const T& item);				// Set value at index
+	template<typename U = T>
+	typename std::enable_if<std::is_copy_constructible<U>::value, bool>::type
+		set(unsigned int index, const U& item);					// Set value at index
+	bool set(unsigned int index, T&& item) noexcept;			// Set value at index (move operation)
+	template <typename... Args>
+	bool setEmplace(unsigned int index, Args&&... args);		// Emplace object at index
 	bool setAllInt(int item);									// Set value of all
-	bool setAll(const T& item);									// Assign value of all (any data type)
+	template<typename U = T>
+	typename std::enable_if<std::is_copy_constructible<U>::value, bool>::type
+		setAll(const U& item);									// Assign value of all (any data type)
+	bool setAll(T&& item) noexcept;								// Assign value of all (move operation)
 
-	bool insert(unsigned int index, const T& item);				// Insert item at index
+	template<typename U = T>
+	typename std::enable_if<std::is_copy_constructible<U>::value, bool>::type
+		insert(unsigned int index, const U& item);				// Insert item at index
+	bool insert(unsigned int index, T&& item) noexcept;			// Insert item at index (move operation)
 	template <typename... Args>
 	bool insertEmplace(unsigned int index, Args&&... args);		// Instantiate object in place
-	unsigned int insertSorted(const T& item, bool order, bool dup);	// Insert item into sorted list
+	template<typename U = T>
+	typename std::enable_if<std::is_copy_constructible<U>::value, unsigned int>::type
+		insertSorted(const U& item, bool order, bool dup);	// Insert item into sorted list
+	unsigned int insertSorted(T&& item, bool order, bool dup) noexcept;	// Insert item into sorted list (move operation)
 
-	int push(const T& item) { return (insert(count, item) ? getCount() - 1 : -1); }	// Push item on end
+	template<typename U = T>
+	typename std::enable_if<std::is_copy_constructible<U>::value, int>::type
+		push(const U& item) { return (insert(count, item) ? getCount() - 1 : -1); }	// Push item on end
+	int push(T&& item) noexcept { return (insert(count, std::move(item)) ? getCount() - 1 : -1); }	// Push item on end (move operation)
 	template <typename... Args>
 	int pushEmplace(Args&&... args);							// Instantiate object in place at back
-	bool pop() { return remove(count - 1); }					// Pop/remove end item
+	bool pop() { return remove(count - 1); }					// Pop/remove end item (TODO: should this return a copy of the item?)
 
 	const T* getData()const { return data; }					// Get pointer to data
 	void copyData(const ArrayList<T>& b);						// Copy data, allocate only if necessary
@@ -79,36 +93,109 @@ public:
 	T& get(unsigned int index) { return (*this)[index]; }		// Get reference to item at index
 	T& getLast() { return (*this)[count - 1]; }					// Get reference to end item
 
+	// STD::VECTOR FUNCTIONS (disable for non-copyable types)
+	// Constructor: copy
+	template<typename U = T>
+	ArrayList(const std::vector<U>& copy,
+		typename std::enable_if<std::is_copy_constructible<U>::value>::type* = nullptr)
+		{ *this = copy; }
+	// Operator =
+	template<typename U = T>
+	typename std::enable_if<std::is_copy_constructible<U>::value, const ArrayList<T>&>::type
+		operator =(const std::vector<U>& b);
 
-	// std::vector functions
-	ArrayList(const std::vector<T> &copy) : ArrayList() { *this = copy; }	// Constructor: copy
-	const ArrayList<T>& operator =(const std::vector<T>& b);	// Operator =
+private:
+	void moveDataUp(unsigned int index);	// Shift data up above index
+	void moveDataDown(unsigned int index);	// Shift data down above index
 };
 
+//// Constructor: copy (static_assert for non-copyable types)
+//template <typename T>
+//ArrayList<T>::ArrayList(const ArrayList<T>& copy) : ArrayList()
+//{
+//	// Note: Using static_assert here instead of SFINAE because SFINAE
+//	//       does not work properly with constructors. It causes them
+//	//       to not be recognized as the right constructor template.
+//
+//	static_assert(std::is_copy_constructible<T>::value,
+//		"ArrayList copy constructor requires copyable types");
+//
+//	free();
+//
+//	updateCount(copy.getCount());
+//
+//	if (std::is_trivially_copyable<T>::value)
+//		// Copy raw data
+//		memcpy(data, copy.data, copy.getCount() * sizeof(T));
+//	else
+//		// Call copy constructors
+//		for (unsigned int i = 0; i < copy.getCount(); i++)
+//			new (&data[i]) T(copy[i]);
+//}
+
+// Constructor: move (rvalue-only (&&))
+template <typename T>
+ArrayList<T>::ArrayList(ArrayList<T>&& other) noexcept
+	: data(other.data), count(other.count), size(other.size)
+{
+	other.data = nullptr;
+	other.count = 0;
+	other.size = 0;
+}
+
 // Constructor: array
-template<typename T>
+template <typename T>
 inline ArrayList<T>::ArrayList(const T in[], unsigned int len) : ArrayList()
 {
 	if (len == 0)
 		return;
 
+	free();
+
 	updateCount(len);
 
-	memcpy(data, in, len * sizeof(T));
+	// TODO: Share this code with operator =
+	if (!std::is_trivially_copyable<T>::value)
+		for (unsigned int i = 0; i < len; i++)
+			new (&data[i]) T(in[i]);
+	else
+		memcpy(data, in, len * sizeof(T));
 }
 
 // Operator =
-template <typename T>
-const ArrayList<T>& ArrayList<T>::operator =(const ArrayList<T>& b)
+template<typename T>
+typename std::enable_if<std::is_copy_constructible_v<T>, const ArrayList<T>&>
+ArrayList<T>::operator =(const ArrayList<T>& b)
 {
 	free();
 
-	allocate(b.size);
+	updateCount(b.getCount());
 
-	if (!(b.isEmpty()))
+	if (std::is_trivially_copyable<T>::value)
+		// Copy raw data
+		memcpy(data, b.data, b.getCount() * sizeof(T));
+	else
+		// Call copy constructors
+		for (unsigned int i = 0; i < b.getCount(); i++)
+			new (&data[i]) T(b[i]);
+
+	return *this;
+}
+
+// Operator = (move operation with rvalue-only argument (&&))
+template <typename T>
+const ArrayList<T>& ArrayList<T>::operator =(ArrayList<T>&& other) noexcept
+{
+	if (this != &other)
 	{
-		count = b.count;
-		memcpy(data, b.data, count * sizeof(T));
+		free();
+		data = other.data;
+		count = other.count;
+		size = other.size;
+
+		other.data = nullptr;
+		other.count = 0;
+		other.size = 0;
 	}
 
 	return *this;
@@ -121,7 +208,7 @@ bool ArrayList<T>::updateCount(unsigned int new_count)
 {
 	if (new_count > count)
 	{
-		allocate(new_count);	// Allocate more memory if needed
+		allocate(new_count, false);	// Allocate more memory if needed
 		count = new_count;
 		return true;
 	}
@@ -143,39 +230,39 @@ bool ArrayList<T>::allocate(unsigned int new_size, bool downsize)
 		if (new_size < count)
 			new_size = count;
 
-		T* temp;
-		unsigned int remainder;
-
 		// Re-size
-		if (new_size <= 100)
+		if (new_size <= 10)
+			new_size = 10;
+		else if (new_size <= 100)
 			new_size = 100;
-		else if (new_size <= 200)
-			new_size = 200;
-		else if (new_size <= 500)
-			new_size = 500;
 		else if (new_size <= 1000)
 			new_size = 1000;
+		else if (new_size <= 10000)
+			new_size = 10000;
 		else
 		{
 			// TODO: doesn't scale well for very large arrays
-			remainder = new_size % 1000;
+			unsigned int remainder = new_size % 10000;
 
 			if (remainder > 0)
-				new_size += 1000 - remainder;
+				new_size += 10000 - remainder;
 		}
 
 		// Copy data to new memory location
 		if (count > 0)
 		{
-			temp = data;
-			data = new T[new_size];
+			T* temp = data;
+			// Manually allocate memory to avoid creating object instances
+			data = static_cast<T*>(::operator new(new_size * sizeof(T)));
+
+			// Copy data in used memory (up to count)
 			memcpy(data, temp, count * sizeof(T));
-			if (std::is_destructible<T>::value)		// Does T have a destructor? If so...
-				memset(temp, 0, count * sizeof(T));	// prevent delete from calling destructors
-			delete[] temp;
+
+			// Manually delete (does not call destructors)
+			::operator delete(temp);
 		}
 		else
-			data = new T[new_size];
+			data = static_cast<T*>(::operator new(new_size * sizeof(T)));
 
 		size = new_size;
 
@@ -184,14 +271,62 @@ bool ArrayList<T>::allocate(unsigned int new_size, bool downsize)
 }
 
 // Set value at index
-template <typename T>
-bool ArrayList<T>::set(unsigned int index, const T& item)
+template<typename T>
+template<typename U>
+typename std::enable_if<std::is_copy_constructible<U>::value, bool>::type
+ArrayList<T>::set(unsigned int index, const U& item)
 {
 	if (index >= count)
 		return false;
 	else
 	{
-		data[index] = item;
+		if (std::is_trivially_copyable<T>::value)
+			data[index] = item;
+		else
+		{
+			data[index].~T();
+			new (&data[index]) T(item);
+		}
+			
+		return true;
+	}
+}
+
+// Set value at index (move operation)
+template<typename T>
+bool ArrayList<T>::set(unsigned int index, T&& item) noexcept
+{
+	if (index >= count)
+		return false;
+	else
+	{
+		if (std::is_trivially_copyable<T>::value)
+			data[index] = std::move(item);
+		else
+		{
+			data[index].~T();
+			data[index] = std::move(item);
+		}
+
+		return true;
+	}
+}
+
+// Emplace object at index (overwriting previous)
+template <typename T>
+template <typename... Args>
+bool ArrayList<T>::setEmplace(unsigned int index, Args&&... args)
+{
+	if (index >= count)
+		return false;
+	else
+	{
+		if (!std::is_trivially_copyable<T>::value)
+			data[index].~T();	// Call destructor
+
+		// Instantiate object in place using placement new
+		new (&data[index]) T(std::forward<Args>(args)...);
+
 		return true;
 	}
 }
@@ -200,6 +335,9 @@ bool ArrayList<T>::set(unsigned int index, const T& item)
 template <typename T>
 bool ArrayList<T>::setAllInt(int item)
 {
+	static_assert(std::is_trivially_copyable<T>::value,
+		"setAllInt is only available for non-class types");
+
 	if (count == 0)
 		return false;
 	else
@@ -210,17 +348,32 @@ bool ArrayList<T>::setAllInt(int item)
 }
 
 // Assign value of all (any data type)
-template <typename T>
-bool ArrayList<T>::setAll(const T& item)
+template<typename T>
+template<typename U>
+typename std::enable_if<std::is_copy_constructible<U>::value, bool>::type
+ArrayList<T>::setAll(const U& item)
 {
 	if (count == 0)
 		return false;
 	else
 	{
 		for (unsigned int i = 0; i < count; i++)
-		{
-			data[i] = item;
-		}
+			set(i, item);
+
+		return true;
+	}
+}
+
+// Assign value of all (move operation, any data type)
+template<typename T>
+bool ArrayList<T>::setAll(T&& item) noexcept
+{
+	if (count == 0)
+		return false;
+	else
+	{
+		for (unsigned int i = 0; i < count; i++)
+			set(i, std::move(item));
 
 		return true;
 	}
@@ -228,33 +381,36 @@ bool ArrayList<T>::setAll(const T& item)
 
 // Insert item at index
 // Push other items up the list
-template <typename T>
-bool ArrayList<T>::insert(unsigned int index, const T& item)
+template<typename T>
+template<typename U>
+typename std::enable_if<std::is_copy_constructible<U>::value, bool>::type
+ArrayList<T>::insert(unsigned int index, const U& item)
 {
-	// Highest insert allowed is right after last item
+	// Highest insert allowed is right after last item (index == count)
 	if (index > count)
 		return false;
+	else if (index == count)
+		addOneCount();
+	else
+		moveDataUp(index);
 
-	addOneCount();
+	return set(index, item);
+}
 
-	// TODO: make a shiftData() function since this is done in multiple places?
-	// TODO: could make this more efficient by incorporating the data shift into the re-allocation step
-	if (count > 1)
-	{
-		// Move items up
-		for (unsigned int i = count - 1; i > index; i--)
-		{
-			// Use memcpy to avoid calling assignment operator
-			memcpy(&data[i], &data[i - 1], sizeof(T));
+// Insert item at index (move operation)
+// Push other items up the list
+template<typename T>
+bool ArrayList<T>::insert(unsigned int index, T&& item) noexcept
+{
+	// Highest insert allowed is right after last item (index == count)
+	if (index > count)
+		return false;
+	else if (index == count)
+		addOneCount();
+	else
+		moveDataUp(index);
 
-			if (i == 0)
-				break;
-		}
-	}
-
-	data[index] = item;		// A copy constructor is expected here
-
-	return true;
+	return set(index, std::move(item));
 }
 
 // Instantiate object in place
@@ -262,37 +418,24 @@ template <typename T>
 template <typename... Args>
 bool ArrayList<T>::insertEmplace(unsigned int index, Args&&... args)
 {
-	// Highest insert allowed is right after last item
+	// Highest insert allowed is right after last item (index == count)
 	if (index > count)
 		return false;
+	else if (index == count)
+		addOneCount();
+	else
+		moveDataUp(index);
 
-	addOneCount();
-
-	// TODO: make a shiftData() function since this is done in multiple places?
-	// TODO: could make this more efficient by incorporating the data shift into the re-allocation step
-	if (count > 1)
-	{
-		// Move items up
-		for (unsigned int i = count - 1; i > index; i--)
-		{
-			// Use memcpy to avoid calling assignment operator
-			memcpy(&data[i], &data[i - 1], sizeof(T));
-
-			if (i == 0)
-				break;
-		}
-	}
-	
-	new (&data[index]) T(std::forward<Args>(args)...);	// Using "placement new" feature
-
-	return true;
+	return setEmplace(index, std::forward<Args>(args)...);
 }
 
 
 // Insert item into sorted list
-// List must be pre-sorted (TODO: add bool sorted variable)
-template <typename T>
-unsigned int ArrayList<T>::insertSorted(const T& item, bool order, bool dup)
+// List must be pre-sorted (TODO: add bool "sorted" variable)
+template<typename T>
+template<typename U>
+typename std::enable_if<std::is_copy_constructible<U>::value, unsigned int>::type
+ArrayList<T>::insertSorted(const U& item, bool order, bool dup)
 {
 	if (isEmpty())
 		insert(0, item);
@@ -341,6 +484,58 @@ unsigned int ArrayList<T>::insertSorted(const T& item, bool order, bool dup)
 	}
 }
 
+// Insert item into sorted list (move operation)
+// List must be pre-sorted (TODO: add bool "sorted" variable)
+template<typename T>
+unsigned int ArrayList<T>::insertSorted(T&& item, bool order, bool dup) noexcept
+{
+	if (isEmpty())
+		insert(0, std::move(item));
+	else
+	{
+		// Check if should be inserted at beginning
+		if ((dup && data[0] == item) || (!order && data[0] > item) || (order && data[0] < item))
+		{
+			insert(0, std::move(item));
+			return 0;
+		}
+
+		for (unsigned int i = 0; i < count - 1; i++)
+		{
+			// Ascending
+			if (!order)
+			{
+				if (data[i + 1] > item && (data[i] < item || dup))
+				{
+					// Insert between i and i+1
+					insert(i + 1, std::move(item));
+					return i + 1;
+				}
+			}
+			// Descending
+			else
+			{
+				if (data[i + 1] < item && (data[i] > item || dup))
+				{
+					// Insert between i and i+1
+					insert(i + 1, std::move(item));
+					return i + 1;
+				}
+			}
+		}
+
+		// End of list
+		unsigned int i = count - 1;
+		if (dup || data[i] != item)
+		{
+			insert(count, std::move(item));
+			return count;
+		}
+		else
+			return i;
+	}
+}
+
 
 // Instantiate object in place at back
 template <typename T>
@@ -349,6 +544,7 @@ int ArrayList<T>::pushEmplace(Args&&... args)
 { 
 	return (insertEmplace(count, std::forward<Args>(args)...) ? getCount() - 1 : -1);
 }
+
 
 // Empty array and copy data from another array, only allocate if needed
 // TODO: how is this different from the assignment operator? Just doesn't re-allocate?
@@ -359,35 +555,41 @@ void ArrayList<T>::copyData(const ArrayList<T>& b)
 	//	     Most common issues is double deletion.
 	//static_assert(!std::is_class_v<T>, "ArrayList<T>::copyData disabled for class/struct types due to pointer duplication risk");
 
+	if (b.isEmpty())
+		return;
+	
 	clear();
 
-	if (b.count > size)
-		allocate(b.getSize());
+	updateCount(b.getCount());
 
-	if (!(b.isEmpty()))
-	{
-		count = b.count;
-		memcpy(data, b.data, count * sizeof(T));
-	}
+	if (std::is_trivially_copyable<T>::value)
+		// Copy raw data
+		memcpy(data, b.data, b.getCount() * sizeof(T));
+	else
+		// Call copy constructors
+		for (unsigned int i = 0; i < b.getCount(); i++)
+			new (&data[i]) T(b[i]);
 }
 
 // Remove item at index
 template <typename T>
 bool ArrayList<T>::remove(unsigned int index)
 {
-	if (index >= count)
-		return false;	// Invalid index
-	else
+	if (index > count - 1)
+		return false;
+
+	if (!std::is_trivially_copyable<T>::value)
 	{
-		for (unsigned int i = index; i < count - 1; i++)
-		{
-			data[i] = data[i + 1];
-		}
-
-		count--;
-
-		return true;
+		data[index].~T();
+		memset(&data[index], 0, sizeof(T));
 	}
+
+	if (index >= count - 1)
+		count--;
+	else
+		moveDataDown(index);
+
+	return true;
 }
 
 
@@ -395,12 +597,11 @@ bool ArrayList<T>::remove(unsigned int index)
 template <typename T>
 void ArrayList<T>::clear()
 {
-	for (unsigned int i = 0; i < count; i++)
-	{
-		if (std::is_destructible<T>::value)	
+	// Call destructors if not basic type
+	if (!std::is_trivially_copyable<T>::value)
+		for (unsigned int i = 0; i < count; i++)
 			data[i].~T();
-	}
-
+		
 	memset(data, 0, count * sizeof(T));
 
 	count = 0;
@@ -411,8 +612,10 @@ void ArrayList<T>::clear()
 template <typename T>
 void ArrayList<T>::free()
 {
+	clear();
+
 	if (data)
-		delete[] data;	// Calls destructors
+		::operator delete(data);  // Raw deallocation only
 
 	data = nullptr;
 	count = 0;
@@ -421,20 +624,57 @@ void ArrayList<T>::free()
 
 
 // std::vector functions
-template <typename T>
-const ArrayList<T>& ArrayList<T>::operator =(const std::vector<T>& b)
-{
+template<typename T>
+template<typename U>
+typename std::enable_if<std::is_copy_constructible<U>::value, const ArrayList<T>&>::type
+ArrayList<T>::operator=(const std::vector<U>& b)
+{	
 	free();
 
-	if (b.size() > 0)
-	{
-		allocate(b.size());
-		count = b.size();
-		memcpy(data, b.data(), count * sizeof(T));
-	}
+	updateCount(b.size());
+
+	if (std::is_trivially_copyable<T>::value)
+		// Copy raw data
+		memcpy(data, b.data(), b.size() * sizeof(T));
+	else
+		// Call copy constructors
+		for (unsigned int i = 0; i < b.size(); i++)
+			new (&data[i]) T(b[i]);
 
 	return *this;
 }
 
+
+// Shift data up above index
+template <typename T>
+void ArrayList<T>::moveDataUp(unsigned int index)
+{
+	if (index >= count)
+		return;
+
+	addOneCount();
+
+	// TODO: could make this more efficient by incorporating the data shift into the re-allocation step?
+	// Move memory (even for classes)
+	memmove(&data[index + 1], &data[index], (count - 1 - index) * sizeof(T));
+
+	memset(&data[index], 0, sizeof(T));
+}
+
+
+// Shift data down from index + 1 to index
+template <typename T>
+void ArrayList<T>::moveDataDown(unsigned int index)
+{
+	if (index >= count - 1)
+		return;
+
+	// Move memory (even for classes)
+	memmove(&data[index], &data[index + 1], (count - 1 - index) * sizeof(T));
+
+	memset(&data[count - 1], 0, sizeof(T));
+
+	count--;  // Decrease count since we removed an item
+}
 
 #endif
