@@ -16,6 +16,9 @@
 #include <type_traits>
 #include <new>
 
+template<typename T>
+concept Copyable = std::is_copy_constructible_v<T>;
+
 template <typename T>
 class ArrayList
 {
@@ -29,13 +32,13 @@ public:
 	//ArrayList(const ArrayList<T>& copy);						// Constructor: copy
 	ArrayList(ArrayList<T>&& other) noexcept;					// Constructor: move (rvalue)
 	ArrayList(unsigned int c) : ArrayList() { allocate(c); }	// Constructor: w/ allocation
-	ArrayList(const T in[], unsigned int len);					// Constructor: array
+	template <Copyable U = T>
+	ArrayList(const U in[], unsigned int len);					// Constructor: array
 	~ArrayList() { free(); }									// Destructor
 
 	// OPERATORS
 	// Disable assignment operator for non-copyable types
-	typename std::enable_if<std::is_copy_constructible_v<T>, const ArrayList<T>&>
-		operator=(const ArrayList<T>& b);						// Operator =
+	const ArrayList<T>& operator =(const ArrayList<T>& b) requires Copyable<T>;	// Operator =
 	const ArrayList<T>& operator =(ArrayList<T>&& other) noexcept;	// Operator (move rvalue)
 	T& operator [](unsigned int i) { return data[i]; }			// Operator []
 	const T& operator [](unsigned int i)const { return data[i]; }	// Operator [] (const)
@@ -145,7 +148,8 @@ ArrayList<T>::ArrayList(ArrayList<T>&& other) noexcept
 
 // Constructor: array
 template <typename T>
-inline ArrayList<T>::ArrayList(const T in[], unsigned int len) : ArrayList()
+template <Copyable U>
+ArrayList<T>::ArrayList(const U in[], unsigned int len) : ArrayList()
 {
 	if (len == 0)
 		return;
@@ -163,9 +167,8 @@ inline ArrayList<T>::ArrayList(const T in[], unsigned int len) : ArrayList()
 }
 
 // Operator =
-template<typename T>
-typename std::enable_if<std::is_copy_constructible_v<T>, const ArrayList<T>&>
-ArrayList<T>::operator =(const ArrayList<T>& b)
+template <typename T>
+const ArrayList<T>& ArrayList<T>::operator =(const ArrayList<T>& b) requires Copyable<T>
 {
 	free();
 
@@ -179,7 +182,7 @@ ArrayList<T>::operator =(const ArrayList<T>& b)
 		for (unsigned int i = 0; i < b.getCount(); i++)
 			new (&data[i]) T(b[i]);
 
-	return *this;
+	return (const ArrayList<T>&)(*this);
 }
 
 // Operator = (move operation with rvalue-only argument (&&))
