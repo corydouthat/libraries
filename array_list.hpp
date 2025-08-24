@@ -15,6 +15,7 @@
 #include <utility>
 #include <type_traits>
 #include <new>
+#include <stdexcept>
 
 template<typename T>
 concept Copyable = std::is_copy_constructible_v<T> && std::is_copy_assignable_v<T>;
@@ -29,7 +30,7 @@ private:
 public:
 	// CONSTRUCTORS AND DESTRUCTOR
 	ArrayList() : data(nullptr), count(0), size(0) {}			// Constructor: default
-	ArrayList(const ArrayList<T>& copy) requires Copyable<T> { *this = copy; }	// Constructor: copy
+	ArrayList(const ArrayList<T>& copy) requires Copyable<T> : ArrayList() { *this = copy; }	// Constructor: copy
 	ArrayList(ArrayList<T>&& other) noexcept;					// Constructor: move (rvalue)
 	ArrayList(unsigned int c) : ArrayList() { allocate(c); }	// Constructor: w/ allocation
 	ArrayList(const T in[], unsigned int len) requires Copyable<T>;	// Constructor: array
@@ -71,7 +72,7 @@ public:
 	int push(T&& item) noexcept { return (insert(count, std::move(item)) ? getCount() - 1 : -1); }	// Push item on end (move operation)
 	template <typename... Args>
 	int pushEmplace(Args&&... args);							// Instantiate object in place at back
-	bool pop() { return remove(count - 1); }					// Pop/remove end item (TODO: should this return a copy of the item?)
+	bool pop() { return count ? remove(count - 1) : false; }	// Pop/remove end item (TODO: should this return a copy of the item?)
 
 	const T* getData()const { return data; }					// Get pointer to data
 	void copyData(const ArrayList<T>& b) requires Copyable<T>;	// Copy data, allocate only if necessary
@@ -83,8 +84,8 @@ public:
 	void free();												// Clear and de-allocate memory
 	
 	// READ FUNCTIONS
-	T& get(unsigned int index) { return (*this)[index]; }		// Get reference to item at index
-	T& getLast() { return (*this)[count - 1]; }					// Get reference to end item
+	T& get(unsigned int index);									// Get reference to item at index
+	T& getLast();												// Get reference to end item
 
 	// STD::VECTOR FUNCTIONS (disable for non-copyable types)
 	ArrayList(const std::vector<T>& copy) requires Copyable<T> { *this = copy; }
@@ -92,7 +93,7 @@ public:
 
 private:
 	void moveDataUp(unsigned int index);	// Shift data up above index
-	void moveDataDown(unsigned int index);	// Shift data down above index
+	void moveDataDown(unsigned int index, bool index_initialized = true);	// Shift data down above index
 };
 
 
@@ -171,7 +172,17 @@ bool ArrayList<T>::updateCount(unsigned int new_count)
 	if (new_count > count)
 	{
 		allocate(new_count, false);	// Allocate more memory if needed
+		
+		// Call default constructor for new items
+		// TODO: inefficient, but currently necessary to avoid calling destructors on uninitialized memory
+		if (!std::is_trivially_copyable<T>::value)
+		{
+			for (unsigned int i = count; i < new_count; i++)
+				new (&data[i]) T();	// Call default constructor
+		}
+
 		count = new_count;
+
 		return true;
 	}
 	else
@@ -260,13 +271,11 @@ bool ArrayList<T>::set(unsigned int index, T&& item) noexcept
 		return false;
 	else
 	{
-		if (std::is_trivially_copyable<T>::value)
-			data[index] = std::move(item);
-		else
-		{
-			data[index].~T();
-			data[index] = std::move(item);
-		}
+		//// TODO: is_trivially_copyable always false for move operation functions?
+		//if (!std::is_trivially_copyable<T>::value)
+		//	data[index].~T();
+
+		data[index] = std::move(item);
 
 		return true;
 	}
@@ -541,7 +550,7 @@ bool ArrayList<T>::remove(unsigned int index)
 	if (index >= count - 1)
 		count--;
 	else
-		moveDataDown(index);
+		moveDataDown(index, false); // Second argument false becasue item at index has already been destructed
 
 	return true;
 }
@@ -577,6 +586,26 @@ void ArrayList<T>::free()
 }
 
 
+// Get reference to item at index
+template <typename T>
+T& ArrayList<T>::get(unsigned int index)
+{
+	if (index >= count)
+		throw std::out_of_range("ArrayList<T>::get() - index out of range");
+	return data[index];
+}
+
+
+// Get reference to end item
+template <typename T>
+T& ArrayList<T>::getLast()
+{
+	if (count == 0)
+		throw std::out_of_range("ArrayList<T>::getLast() - list is empty");
+	get(count - 1);
+}
+
+
 // std::vector functions
 template<typename T>
 const ArrayList<T>& ArrayList<T>::operator =(const std::vector<T>& b) requires Copyable<T>
@@ -606,24 +635,43 @@ void ArrayList<T>::moveDataUp(unsigned int index)
 
 	addOneCount();
 
+	// Call destructor on last item (default initialized by addOneCount()) before overwriting memory
+	// TODO: Inefficient and only necessary because addOneCount/updateCount currently has to initialize 
+	//		 new memory to avoid calling destructors on uninitialized memory. Should re-architect
+	if (!std::is_trivially_copyable<T>::value)
+		data[count - 1].~T();
+
 	// TODO: could make this more efficient by incorporating the data shift into the re-allocation step?
 	// Move memory (even for classes)
 	memmove(&data[index + 1], &data[index], (count - 1 - index) * sizeof(T));
 
-	memset(&data[index], 0, sizeof(T));
+	if (std::is_trivially_copyable<T>::value)
+		memset(&data[index], 0, sizeof(T));
+	else
+	{
+		// Call default constructor for new item
+		// TODO: same as above, this is inefficient and only necessary to avoid calling destructors on uninitialized memory
+		new (&data[index]) T();  // Default initialize
+	}
 }
 
 
 // Shift data down from index + 1 to index
 template <typename T>
-void ArrayList<T>::moveDataDown(unsigned int index)
+void ArrayList<T>::moveDataDown(unsigned int index, bool index_initialized)
 {
 	if (index >= count - 1)
 		return;
 
+	// Call destructor on item at index before overwriting (if index_initialized is true)
+	// TODO: May be inefficient in some cases, but calling function has control over this behavior
+	if (index_initialized && !std::is_trivially_copyable<T>::value)
+		data[count - 1].~T();
+
 	// Move memory (even for classes)
 	memmove(&data[index], &data[index + 1], (count - 1 - index) * sizeof(T));
 
+	// Set memory to zero, no need to destruct because object moved
 	memset(&data[count - 1], 0, sizeof(T));
 
 	count--;  // Decrease count since we removed an item
