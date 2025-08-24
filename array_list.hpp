@@ -17,11 +17,11 @@
 #include <new>
 
 template<typename T>
-concept Copyable = std::is_copy_constructible_v<T>;
+concept Copyable = std::is_copy_constructible_v<T> && std::is_copy_assignable_v<T>;
 
 template <typename T>
 class ArrayList
-{
+{ 
 private:
 	T* data;
 	unsigned int count;
@@ -29,11 +29,10 @@ private:
 public:
 	// CONSTRUCTORS AND DESTRUCTOR
 	ArrayList() : data(nullptr), count(0), size(0) {}			// Constructor: default
-	//ArrayList(const ArrayList<T>& copy);						// Constructor: copy
+	ArrayList(const ArrayList<T>& copy) requires Copyable<T> { *this = copy; }	// Constructor: copy
 	ArrayList(ArrayList<T>&& other) noexcept;					// Constructor: move (rvalue)
 	ArrayList(unsigned int c) : ArrayList() { allocate(c); }	// Constructor: w/ allocation
-	template <Copyable U = T>
-	ArrayList(const U in[], unsigned int len);					// Constructor: array
+	ArrayList(const T in[], unsigned int len) requires Copyable<T>;	// Constructor: array
 	~ArrayList() { free(); }									// Destructor
 
 	// OPERATORS
@@ -53,88 +52,49 @@ public:
 	bool addOneCount() { return updateCount(count + 1); }		// Add one to count (and re-allocate if necessary)
 	bool allocate(unsigned int new_size, bool downsize = false);	// Re-allocate to new size
 
-	template<typename U = T>
-	typename std::enable_if<std::is_copy_constructible<U>::value, bool>::type
-		set(unsigned int index, const U& item);					// Set value at index
+	bool set(unsigned int index, const T& item) requires Copyable<T>;	// Set value at index
 	bool set(unsigned int index, T&& item) noexcept;			// Set value at index (move operation)
 	template <typename... Args>
 	bool setEmplace(unsigned int index, Args&&... args);		// Emplace object at index
 	bool setAllInt(int item);									// Set value of all
-	template<typename U = T>
-	typename std::enable_if<std::is_copy_constructible<U>::value, bool>::type
-		setAll(const U& item);									// Assign value of all (any data type)
+	bool setAll(const T& item) requires Copyable<T>;			// Assign value of all (any data type)
 	bool setAll(T&& item) noexcept;								// Assign value of all (move operation)
 
-	template<typename U = T>
-	typename std::enable_if<std::is_copy_constructible<U>::value, bool>::type
-		insert(unsigned int index, const U& item);				// Insert item at index
+	bool insert(unsigned int index, const T& item) requires Copyable<T>;	// Insert item at index
 	bool insert(unsigned int index, T&& item) noexcept;			// Insert item at index (move operation)
 	template <typename... Args>
 	bool insertEmplace(unsigned int index, Args&&... args);		// Instantiate object in place
-	template<typename U = T>
-	typename std::enable_if<std::is_copy_constructible<U>::value, unsigned int>::type
-		insertSorted(const U& item, bool order, bool dup);	// Insert item into sorted list
+	unsigned int insertSorted(const T& item, bool order, bool dup) requires Copyable<T>;	// Insert item into sorted list
 	unsigned int insertSorted(T&& item, bool order, bool dup) noexcept;	// Insert item into sorted list (move operation)
 
-	template<typename U = T>
-	typename std::enable_if<std::is_copy_constructible<U>::value, int>::type
-		push(const U& item) { return (insert(count, item) ? getCount() - 1 : -1); }	// Push item on end
+	int push(const T& item) requires Copyable<T> { return (insert(count, item) ? getCount() - 1 : -1); }	// Push item on end
 	int push(T&& item) noexcept { return (insert(count, std::move(item)) ? getCount() - 1 : -1); }	// Push item on end (move operation)
 	template <typename... Args>
 	int pushEmplace(Args&&... args);							// Instantiate object in place at back
 	bool pop() { return remove(count - 1); }					// Pop/remove end item (TODO: should this return a copy of the item?)
 
 	const T* getData()const { return data; }					// Get pointer to data
-	void copyData(const ArrayList<T>& b);						// Copy data, allocate only if necessary
+	void copyData(const ArrayList<T>& b) requires Copyable<T>;	// Copy data, allocate only if necessary
+	void moveData(ArrayList<T>&& b) noexcept;					// Move data, allocate only if necessary
 	
 	bool remove(unsigned int index);							// Remove item at index
 
 	void clear();												// Clear list
 	void free();												// Clear and de-allocate memory
-
+	
 	// READ FUNCTIONS
 	T& get(unsigned int index) { return (*this)[index]; }		// Get reference to item at index
 	T& getLast() { return (*this)[count - 1]; }					// Get reference to end item
 
 	// STD::VECTOR FUNCTIONS (disable for non-copyable types)
-	// Constructor: copy
-	template<typename U = T>
-	ArrayList(const std::vector<U>& copy,
-		typename std::enable_if<std::is_copy_constructible<U>::value>::type* = nullptr)
-		{ *this = copy; }
-	// Operator =
-	template<typename U = T>
-	typename std::enable_if<std::is_copy_constructible<U>::value, const ArrayList<T>&>::type
-		operator =(const std::vector<U>& b);
+	ArrayList(const std::vector<T>& copy) requires Copyable<T> { *this = copy; }
+	const ArrayList<T>& operator =(const std::vector<T>& b) requires Copyable<T>;
 
 private:
 	void moveDataUp(unsigned int index);	// Shift data up above index
 	void moveDataDown(unsigned int index);	// Shift data down above index
 };
 
-//// Constructor: copy (static_assert for non-copyable types)
-//template <typename T>
-//ArrayList<T>::ArrayList(const ArrayList<T>& copy) : ArrayList()
-//{
-//	// Note: Using static_assert here instead of SFINAE because SFINAE
-//	//       does not work properly with constructors. It causes them
-//	//       to not be recognized as the right constructor template.
-//
-//	static_assert(std::is_copy_constructible<T>::value,
-//		"ArrayList copy constructor requires copyable types");
-//
-//	free();
-//
-//	updateCount(copy.getCount());
-//
-//	if (std::is_trivially_copyable<T>::value)
-//		// Copy raw data
-//		memcpy(data, copy.data, copy.getCount() * sizeof(T));
-//	else
-//		// Call copy constructors
-//		for (unsigned int i = 0; i < copy.getCount(); i++)
-//			new (&data[i]) T(copy[i]);
-//}
 
 // Constructor: move (rvalue-only (&&))
 template <typename T>
@@ -148,8 +108,7 @@ ArrayList<T>::ArrayList(ArrayList<T>&& other) noexcept
 
 // Constructor: array
 template <typename T>
-template <Copyable U>
-ArrayList<T>::ArrayList(const U in[], unsigned int len) : ArrayList()
+ArrayList<T>::ArrayList(const T in[], unsigned int len) requires Copyable<T> : ArrayList()
 {
 	if (len == 0)
 		return;
@@ -275,9 +234,7 @@ bool ArrayList<T>::allocate(unsigned int new_size, bool downsize)
 
 // Set value at index
 template<typename T>
-template<typename U>
-typename std::enable_if<std::is_copy_constructible<U>::value, bool>::type
-ArrayList<T>::set(unsigned int index, const U& item)
+bool ArrayList<T>::set(unsigned int index, const T& item) requires Copyable<T>
 {
 	if (index >= count)
 		return false;
@@ -352,9 +309,7 @@ bool ArrayList<T>::setAllInt(int item)
 
 // Assign value of all (any data type)
 template<typename T>
-template<typename U>
-typename std::enable_if<std::is_copy_constructible<U>::value, bool>::type
-ArrayList<T>::setAll(const U& item)
+bool ArrayList<T>::setAll(const T& item) requires Copyable<T>
 {
 	if (count == 0)
 		return false;
@@ -385,9 +340,7 @@ bool ArrayList<T>::setAll(T&& item) noexcept
 // Insert item at index
 // Push other items up the list
 template<typename T>
-template<typename U>
-typename std::enable_if<std::is_copy_constructible<U>::value, bool>::type
-ArrayList<T>::insert(unsigned int index, const U& item)
+bool ArrayList<T>::insert(unsigned int index, const T& item) requires Copyable<T>
 {
 	// Highest insert allowed is right after last item (index == count)
 	if (index > count)
@@ -436,9 +389,7 @@ bool ArrayList<T>::insertEmplace(unsigned int index, Args&&... args)
 // Insert item into sorted list
 // List must be pre-sorted (TODO: add bool "sorted" variable)
 template<typename T>
-template<typename U>
-typename std::enable_if<std::is_copy_constructible<U>::value, unsigned int>::type
-ArrayList<T>::insertSorted(const U& item, bool order, bool dup)
+unsigned int ArrayList<T>::insertSorted(const T& item, bool order, bool dup) requires Copyable<T>
 {
 	if (isEmpty())
 		insert(0, item);
@@ -552,7 +503,7 @@ int ArrayList<T>::pushEmplace(Args&&... args)
 // Empty array and copy data from another array, only allocate if needed
 // TODO: how is this different from the assignment operator? Just doesn't re-allocate?
 template <typename T>
-void ArrayList<T>::copyData(const ArrayList<T>& b)
+void ArrayList<T>::copyData(const ArrayList<T>& b) requires Copyable<T>
 {
 	// Note: This can be dangerous if copying objects with pointers. 
 	//	     Most common issues is double deletion.
@@ -628,9 +579,7 @@ void ArrayList<T>::free()
 
 // std::vector functions
 template<typename T>
-template<typename U>
-typename std::enable_if<std::is_copy_constructible<U>::value, const ArrayList<T>&>::type
-ArrayList<T>::operator=(const std::vector<U>& b)
+const ArrayList<T>& ArrayList<T>::operator =(const std::vector<T>& b) requires Copyable<T>
 {	
 	free();
 
