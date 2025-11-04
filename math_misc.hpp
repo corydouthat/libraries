@@ -13,6 +13,9 @@
 #include <cmath>
 #include <cstdint>
 #include <limits>
+#include <random>
+#include <unordered_set>
+#include <algorithm>
 
 #include "vec.hpp"
 #include "mat.hpp"
@@ -227,13 +230,28 @@ bool SolveGaussElim(const T *A_mat, const T *b_vec, unsigned int n, T *x_vec)
 	return true;
 }
 
-template<typename T>
+template <typename T>
 T CalcTriangleArea(Vec3<T> a, Vec3<T> b, Vec3<T> c)
 {
 	return ((b - a) % (c - a)).len() / 2;
 }
 
-template<typename T>
+template <typename T>
+Vec3<T> CalcTriangleCentroid(Vec3<T> a, Vec3<T> b, Vec3<T> c)
+{
+	return (a + b + c) / 3;
+}
+
+template <typename T>
+T CalcTriangleBoundRadius(Vec3<T> centroid, Vec3<T> a, Vec3<T> b, Vec3<T> c)
+{
+	T ra = (a - centroid).lenSq();
+	T rb = (b - centroid).lenSq();
+	T rc = (c - centroid).lenSq();
+	return sqrt(std::max(std::max(ra, rb), rc));
+}
+
+template <typename T>
 Vec3<T> ProjectVertexPlane(Vec3<T> v, Vec3<T> a, Vec3<T> b, Vec3<T> c)
 {
 	// Calculate normal / plane equation coefficients
@@ -301,6 +319,70 @@ uint32_t PackFloatInt4x8(Vec4f v)
 uint32_t PackFloatInt4x8(Vec4d v)
 {
 	return PackFloatInt4x8(Vec4f(float(v.x), float(v.y), float(v.z), float(v.w)));
+}
+
+
+// Generate random unique integers from a given range
+// Inputs:	count = number of random integers to generate
+//          start = start of range (inclusive)
+//          end = end of range (inclusive)
+// Return:  results* = pointer to array of size 'count' to return results
+//			Return actual number of unique integers found
+unsigned int RandIntsFromRange(unsigned int count, int start, int end, int* results)
+{
+	// Validate inputs
+	if (results == nullptr || start > end) {
+		return 0;
+	}
+
+	// Calculate range size
+	long long range_size = static_cast<long long>(end) - start + 1;
+
+	// Can't generate more unique numbers than exist in range
+	unsigned int max_possible = static_cast<unsigned int>(std::min(static_cast<long long>(count), range_size));
+
+	// Random number generator
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_int_distribution<int> dist(start, end);
+
+	// Use set to track uniqueness
+	std::unordered_set<int> unique_numbers;
+
+	// If we need more than half the range, use different strategy
+	if (max_possible > range_size / 2) 
+	{
+		// Fill with all numbers, then shuffle and take first 'count'
+		std::vector<int> all_numbers;
+		all_numbers.reserve(range_size);
+		for (int i = start; i <= end; ++i) 
+		{
+			all_numbers.push_back(i);
+		}
+		std::shuffle(all_numbers.begin(), all_numbers.end(), gen);
+
+		for (unsigned int i = 0; i < max_possible; ++i) 
+		{
+			results[i] = all_numbers[i];
+		}
+	}
+	else {
+		// Generate random numbers until we have enough unique ones
+		while (unique_numbers.size() < max_possible) 
+		{
+			int num = dist(gen);
+			unique_numbers.insert(num);
+		}
+
+		// Copy to results array
+		unsigned int idx = 0;
+		for (int num : unique_numbers) 
+		{
+			results[idx++] = num;
+		}
+	}
+
+	return max_possible;
 }
 
 #endif
