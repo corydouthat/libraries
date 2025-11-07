@@ -326,20 +326,39 @@ uint32_t PackFloatInt4x8(Vec4d v)
 // Inputs:	count = number of random integers to generate
 //          start = start of range (inclusive)
 //          end = end of range (inclusive)
-// Return:  results* = pointer to array of size 'count' to return results
+//			exclude_count = size of exclude list
+// 			exclude_list[] = array of integers to exclude from results
+// Return:  results[] = pointer to array of size 'count' to return results
 //			Return actual number of unique integers found
-unsigned int RandIntsFromRange(unsigned int count, int start, int end, int* results)
+unsigned int RandIntsFromRange(unsigned int count, int start, int end, unsigned int exclude_count, int* exclude_list, int* results)
 {
 	// Validate inputs
 	if (results == nullptr || start > end) {
 		return 0;
 	}
 
-	// Calculate range size
-	long long range_size = static_cast<long long>(end) - start + 1;
+	// Build set of excluded values (only those within valid range)
+	std::unordered_set<int> excluded_values;
+	if (exclude_list != nullptr && exclude_count > 0) {
+		for (unsigned int i = 0; i < exclude_count; ++i) {
+			int value = exclude_list[i];
+			// Only add if within valid range
+			if (value >= start && value <= end) {
+				excluded_values.insert(value);
+			}
+		}
+	}
 
-	// Can't generate more unique numbers than exist in range
-	unsigned int max_possible = static_cast<unsigned int>(std::min(static_cast<long long>(count), range_size));
+	// Calculate available range size (excluding forbidden values)
+	long long range_size = static_cast<long long>(end) - start + 1;
+	long long available_size = range_size - excluded_values.size();
+
+	// Can't generate more unique numbers than are available
+	if (available_size <= 0) {
+		return 0;
+	}
+
+	unsigned int max_possible = static_cast<unsigned int>(std::min(static_cast<long long>(count), available_size));
 
 	// Random number generator
 	std::random_device rd;
@@ -349,35 +368,35 @@ unsigned int RandIntsFromRange(unsigned int count, int start, int end, int* resu
 	// Use set to track uniqueness
 	std::unordered_set<int> unique_numbers;
 
-	// If we need more than half the range, use different strategy
-	if (max_possible > range_size / 2) 
-	{
-		// Fill with all numbers, then shuffle and take first 'count'
+	// If we need more than half the available range, use different strategy
+	if (max_possible > available_size / 2) {
+		// Fill with all valid numbers (excluding forbidden ones), then shuffle
 		std::vector<int> all_numbers;
-		all_numbers.reserve(range_size);
-		for (int i = start; i <= end; ++i) 
-		{
-			all_numbers.push_back(i);
+		all_numbers.reserve(available_size);
+		for (int i = start; i <= end; ++i) {
+			if (excluded_values.find(i) == excluded_values.end()) {
+				all_numbers.push_back(i);
+			}
 		}
 		std::shuffle(all_numbers.begin(), all_numbers.end(), gen);
 
-		for (unsigned int i = 0; i < max_possible; ++i) 
-		{
+		for (unsigned int i = 0; i < max_possible; ++i) {
 			results[i] = all_numbers[i];
 		}
 	}
 	else {
 		// Generate random numbers until we have enough unique ones
-		while (unique_numbers.size() < max_possible) 
-		{
+		while (unique_numbers.size() < max_possible) {
 			int num = dist(gen);
-			unique_numbers.insert(num);
+			// Check if number is not excluded and not already selected
+			if (excluded_values.find(num) == excluded_values.end()) {
+				unique_numbers.insert(num);
+			}
 		}
 
 		// Copy to results array
 		unsigned int idx = 0;
-		for (int num : unique_numbers) 
-		{
+		for (int num : unique_numbers) {
 			results[idx++] = num;
 		}
 	}
