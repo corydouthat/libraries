@@ -73,6 +73,7 @@ public:
 	template <typename... Args>
 	int pushEmplace(Args&&... args);							// Instantiate object in place at back
 	bool pop() { return count ? remove(count - 1) : false; }	// Pop/remove end item (TODO: should this return a copy of the item?)
+	bool swap(unsigned int a, unsigned int b) requires Copyable<T>;		// Swap two elements
 
 	const T* getData()const { return data; }					// Get pointer to data
 	void copyData(const ArrayList<T>& b) requires Copyable<T>;	// Copy data, allocate only if necessary
@@ -506,6 +507,21 @@ template <typename... Args>
 int ArrayList<T>::pushEmplace(Args&&... args) 
 { 
 	return (insertEmplace(count, std::forward<Args>(args)...) ? getCount() - 1 : -1);
+}
+
+
+// Swap two elements
+template <typename T>
+bool ArrayList<T>::swap(unsigned int a, unsigned int b) requires Copyable<T>
+{
+	if (a >= getCount() || b >= getCount())
+		return false;
+
+	T temp = get(a);
+	set(a, get(b));
+	set(b, temp);
+
+	return true;
 }
 
 
