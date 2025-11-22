@@ -1419,8 +1419,8 @@ Mat4<T> Mat4<T>::projPerspective(T fov_y, T aspect, T d_near, T d_far, bool clip
 	// TODO: check that aspect is valid
 
     Mat4<T> temp(T(0)); // All zeros
-	T f = tan(fov_y / 2.0);
-    f = 1.0 / f;
+	T f = tan(fov_y / (T)2.0);
+    f = (T)1.0 / f;
     temp.v[0] = f / aspect;
     temp.v[5] = f;
 
@@ -1429,7 +1429,7 @@ Mat4<T> Mat4<T>::projPerspective(T fov_y, T aspect, T d_near, T d_far, bool clip
 	if (clip_opengl)	// OpenGL clip -1 to 1
 	{
 		temp.v[10] = (d_far + d_near) / (d_near - d_far);
-		temp.v[14] = (2.0 * d_far * d_near) / (d_near - d_far);
+		temp.v[14] = ((T)2.0 * d_far * d_near) / (d_near - d_far);
 	}
 	else				// Vulkan/Direct3D clip 0 to 1
 	{

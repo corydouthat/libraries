@@ -35,7 +35,8 @@ public:
 	// FUNCTIONS
 	// Constructors
     Vec2() : x(0),y(0) {}													// Constructor: initialize all to zeros
-    Vec2(const T &bx, const T &by) : x(bx),y(by) {}							// Constructor: x, y
+	template <typename sT>
+    Vec2(const sT &bx, const sT &by) : x((T)bx),y((T)by) {}					// Constructor: x, y
 	Vec2(const Vec2<T>& b) { memcpy(this, &b, sizeof(*this)); }				// Constructor: copy
 	Vec2(const Vec3<T>& b) { memcpy(this, &b, sizeof(*this)); }				// Constructor: copy (downsize)
 	template <typename T2>
@@ -89,7 +90,8 @@ public:
 	// FUNCTIONS
 	// Constructors
     Vec3() : x(0), y(0), z(0) {}											// Constructor: initialize all to zeros
-    Vec3(const T &bx, const T &by, const T &bz) : x(bx), y(by), z(bz) {}	// Constructor: x, y, z
+	template <typename sT>
+    Vec3(const sT &bx, const sT &by, const sT &bz) : x((T)bx), y((T)by), z((T)bz) {}	// Constructor: x, y, z
 	Vec3(const Vec3<T> &b) { memcpy(this,&b,sizeof(*this)); }				// Constructor: copy
 	template <typename T2>
 	Vec3(const Vec3<T2>& b) { *this = b; }									// Constructor: copy (conversion)
@@ -146,7 +148,8 @@ public:
     // FUNCTIONS
     // Constructors
     Vec4() : x(0),y(0),z(0),w(0) {}											// Constructor: initialize all to zeros
-    Vec4(const T &bx,const T &by,const T &bz, const T &bw) : x(bx),y(by),z(bz),w(bw) {}	    // Constructor: x, y, z, w
+	template <typename sT>
+    Vec4(const sT &bx,const sT &by,const sT &bz, const sT &bw) : x((T)bx),y((T)by),z((T)bz),w((T)bw) {}	    // Constructor: x, y, z, w
     Vec4(const Vec4<T> &b) { memcpy(this,&b,sizeof(*this)); }				// Constructor: copy
 	template <typename T2>
 	Vec4(const Vec4<T2>& b) { *this = b; }									// Constructor: copy (conversion)
@@ -458,7 +461,7 @@ Vec2<T> operator *(sT s, const Vec2<T> &b)
 template <typename T, typename sT>
 Vec3<T> operator *(sT s, const Vec3<T> &b)
 {
-	return Vec3<T>(b.x * s, b.y * s, b.z * s);
+	return Vec3<T>(b.x * (T)s, b.y * T(s), b.z * (T)s);
 }
 // Vec4 - Non-Member Friend Operator
 // Operator * (scalar * Vec4)
@@ -538,10 +541,10 @@ T Vec3<T>::angle(const Vec3<T>& b)const
 			return acos(div);
 		else if (div > T(1))
 			// TODO: exception handling
-			return acos(1);
+			return acos((T)1.0);
 		else
 			// TODO: exception handling
-			return acos(-1);
+			return acos((T)(-1.0));
 	}
 	else
 	{
@@ -586,10 +589,10 @@ Vec3<T> Vec3<T>::perpendicular(const Vec3<T>& a, const Vec3<T>& b)
 	{
 		// a and b are same direction or opposite
 		// Any vector on plane of 'a' will work
-		if ((temp = a % Vec3<T>(0, T(1), 0)) != Vec3<T>(T(0), T(0), T(0)))
+		if ((temp = a % Vec3<T>(0.0, 1.0, 0.0)) != Vec3<T>(0.0, 0.0, 0.0))
 			return temp.norm();
 		else
-			return (a % Vec3<T>(0, 0, T(1))).norm();
+			return (a % Vec3<T>(0.0, 0.0, 1.0)).norm();
 	}
 }
 

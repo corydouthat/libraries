@@ -45,9 +45,9 @@ bool SolveQuadratic(T a, T b, T c, T* x1, T* x2)
 	T q;
 		
 	if (b >= 0)
-		q = -0.5 * (b + sqrt(b * b - 4 * a * c));
+		q = (T)(-0.5 * (b + sqrt(b * b - 4 * a * c)));
 	else
-		q = -0.5 * (b - sqrt(b * b - 4 * a * c));
+		q = (T)(-0.5 * (b - sqrt(b * b - 4 * a * c)));
 
 	if (q == 0)		// TODO: check close to zero?
 		return false;
@@ -304,7 +304,7 @@ uint32_t PackFloatInt4x8(Vec4f v)
 
 	for (unsigned int i = 0; i < 4; i++)
 	{
-		temp = round(clamp(v[i], 0.f, +1.f) * 255.0);
+		temp = (uint8_t)round(clamp(v[i], 0.f, +1.f) * 255.0);
 
 		result |= static_cast<uint32_t>(temp) << (i * 8);
 	}

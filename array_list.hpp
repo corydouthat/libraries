@@ -402,7 +402,10 @@ template<typename T>
 unsigned int ArrayList<T>::insertSorted(const T& item, bool order, bool dup) requires Copyable<T>
 {
 	if (isEmpty())
+	{
 		insert(0, item);
+		return 0;
+	}
 	else
 	{
 		// Check if should be inserted at beginning
@@ -441,7 +444,7 @@ unsigned int ArrayList<T>::insertSorted(const T& item, bool order, bool dup) req
 		if (dup || data[i] != item)
 		{
 			insert(count, item);
-			return count;
+			return count - 1;
 		}
 		else
 			return i;
@@ -618,7 +621,8 @@ T& ArrayList<T>::getLast()
 {
 	if (count == 0)
 		throw std::out_of_range("ArrayList<T>::getLast() - list is empty");
-	get(count - 1);
+
+	return get(count - 1);
 }
 
 
@@ -628,7 +632,7 @@ const ArrayList<T>& ArrayList<T>::operator =(const std::vector<T>& b) requires C
 {	
 	free();
 
-	updateCount(b.size());
+	updateCount((unsigned int)b.size());
 
 	if (std::is_trivially_copyable<T>::value)
 		// Copy raw data
