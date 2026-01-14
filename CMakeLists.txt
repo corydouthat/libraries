@@ -20,4 +20,4 @@ if (NOT TARGET libraries)
 	 )
 endif()
 
-target_include_directories(libraries INTERFACE ${CMAKE_CURRENT_LIST_DIR})
+target_include_directories(libraries INTERFACE src)

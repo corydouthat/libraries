@@ -17,6 +17,13 @@
 #include "vec.h"
 #include "mat.h"
 
+template <typename T>
+class Mat2;
+template <typename T>
+class Mat3;
+template <typename T>
+class Mat4;
+
 // TODO: Check / maintain unit quaternion?
 
 template <typename T = float>
@@ -89,7 +96,7 @@ public:
 //#ifdef MAT_HPP_
     //Quat(const Mat3<T> &b);												// Constructor: Mat3
     //Quat(const Mat4<T> &b);												// Constructor: Mat4
-    Mat3<T> rotMat()const { return rotMat3(); }								// Extract rotation matrix
+    Mat3<T> rotMat()const { return rotMat3(); }							    // Extract rotation matrix
     Mat3<T> rotMat3()const;													// Extract rotation matrix
     Mat4<T> rotMat4()const;													// Extract rotation matrix
 //#endif

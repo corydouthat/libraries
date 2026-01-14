@@ -19,6 +19,9 @@
 #include "vec.h"
 #include "quat.h"
 
+template <typename T>
+class Quat;
+
 template <typename T = float>
 class Mat2
 {
