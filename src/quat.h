@@ -108,4 +108,6 @@ typedef Quat<double> Quatd;
 typedef Quat<int> Quati;
 typedef Quat<short> Quats;
 
+#include "quat.cpp"
+
 #endif

@@ -9,7 +9,7 @@
 
 // CONSTRUCTORS
 // *****************************************************************************************************************************
-#ifdef VEC_HPP_
+//#ifdef VEC_HPP_
 // Constructor: Axis-Angle
 template <typename T>
 Quat<T>::Quat(T angle, const Vec3<T> &axis)
@@ -33,9 +33,9 @@ Quat<T>::Quat(T angle, const Vec3<T> &axis)
 	}
 }
 
-#endif
+//#endif
 
-#ifdef MAT_HPP_
+//#ifdef MAT_HPP_
 //// Constructor: Mat3
 //template <typename T>
 //Quat<T>::Quat(const Mat3<T> &b)
@@ -49,7 +49,7 @@ Quat<T>::Quat(T angle, const Vec3<T> &axis)
 //{
 //	// TODO
 //}
-#endif
+//#endif
 
 // BASIC OPERATORS
 // *****************************************************************************************************************************
@@ -265,7 +265,7 @@ Quat<T> Quat<T>::slerp(const Quat<T>& q1, const Quat<T>& q2, T t)
 	return (q1 * (q1.inv() * q2).qpow(t)).unitize();
 }
 
-#ifdef VEC_HPP_
+//#ifdef VEC_HPP_
 // Rotate vector by quat
 template <typename T>
 Vec3<T> Quat<T>::rotate(const Vec3<T> &p)const 
@@ -318,9 +318,9 @@ Quat<T> Quat<T>::fromEuler(const Vec3<T> &v)
 		return Quat<T>();
 }
 
-#endif
+//#endif
 
-#ifdef MAT_HPP_
+//#ifdef MAT_HPP_
 // Extract rotation matrix (Mat3)
 template <typename T>
 Mat3<T> Quat<T>::rotMat3()const
@@ -343,4 +343,4 @@ Mat4<T> Quat<T>::rotMat4()const
 		0,						0,						0,						1
 		);
 }
-#endif
+//#endif

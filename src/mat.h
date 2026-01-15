@@ -264,4 +264,6 @@ typedef Mat2<short> Mat2s;
 typedef Mat3<short> Mat3s;
 typedef Mat4<short> Mat4s;
 
+#include "mat.cpp"
+
 #endif

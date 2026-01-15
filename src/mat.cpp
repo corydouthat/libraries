@@ -1215,7 +1215,7 @@ Mat4<T> Mat4<T>::chgBasis(Mat4<T> m, Mat4<T> b)
 // VECTOR RELATED FUNCTIONS
 // **************************************************************************
 
-#ifdef VEC_HPP_
+//#ifdef VEC_HPP_
 
 // Mat2
 // Constructor: two 2D vectors
@@ -1554,12 +1554,12 @@ Mat3<T> Mat3<T>::skewSymCross(Vec3<T> v)
 	return temp;
 }
 
-#endif
+//#endif
 
 
 // QUATERNION RELATED FUNCTIONS
 // **************************************************************************
-#ifdef QUAT_HPP_
+//#ifdef QUAT_HPP_
 // Mat3
 // 3D rot matrix around axis (magnitude as radians)
 template <typename T>
@@ -1595,4 +1595,4 @@ Mat4<T> Mat4<T>::transf(const Quat<T> &q, const Vec3<T> &t)
 	return Mat4<T>::transf(Mat3<T>::rot(q), t);
 }
 
-#endif
+//#endif

@@ -209,4 +209,6 @@ Vec3<T> operator *(sT s, const Vec3<T>& b);		// Operator scalar * Vec3<T>
 template <typename T, typename sT>
 Vec4<T> operator *(sT s, const Vec4<T>& b);		// Operator scalar * Vec4<T>
 
+#include "vec.cpp"
+
 #endif
