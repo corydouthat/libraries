@@ -15,7 +15,7 @@
 #define _USE_MATH_DEFINES	//For PI definition
 #include <cmath>
 
-#include "mat.h"
+#include "mat.hpp"
 
 template <class T> 
 const T& min(const T& a, const T& b)

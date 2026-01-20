@@ -14,8 +14,8 @@
 #include <cmath>
 #include <cstring>
 
-#include "vec.h"
-#include "mat.h"
+#include "vec.hpp"
+#include "mat.hpp"
 
 template <typename T>
 class Mat2;

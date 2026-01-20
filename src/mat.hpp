@@ -16,8 +16,8 @@
 #include <numbers>
 #include <cstring>
 
-#include "vec.h"
-#include "quat.h"
+#include "vec.hpp"
+#include "quat.hpp"
 
 template <typename T>
 class Quat;

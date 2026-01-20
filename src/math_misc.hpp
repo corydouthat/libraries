@@ -17,8 +17,8 @@
 #include <unordered_set>
 #include <algorithm>
 
-#include "vec.h"
-#include "mat.h"
+#include "vec.hpp"
+#include "mat.hpp"
 #include "array_mat.hpp"
 
 // TODO: replace with C++ 17 std::clamp
