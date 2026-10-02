@@ -75,7 +75,10 @@ public:
 	bool pop() { return count ? remove(count - 1) : false; }	// Pop/remove end item (TODO: should this return a copy of the item?)
 	bool swap(unsigned int a, unsigned int b) requires Copyable<T>;		// Swap two elements
 
-	const T* getData()const { return data; }					// Get pointer to data
+	T* getData() { return data; }                        // Get pointer to data
+
+
+	const T* getData()const { return data; }            // Get pointer to data
 	void copyData(const ArrayList<T>& b) requires Copyable<T>;	// Copy data, allocate only if necessary
 	void moveData(ArrayList<T>&& b) noexcept;					// Move data, allocate only if necessary
 	
