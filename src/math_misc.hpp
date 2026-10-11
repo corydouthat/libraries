@@ -328,9 +328,11 @@ uint32_t PackFloatInt4x8(Vec4d v)
 //          end = end of range (inclusive)
 //			exclude_count = size of exclude list
 // 			exclude_list[] = array of integers to exclude from results
+//			seed = generator seed (zero means non-deterministic, seeded from std::random_device)
 // Return:  results[] = pointer to array of size 'count' to return results
 //			Return actual number of unique integers found
-unsigned int RandIntsFromRange(unsigned int count, int start, int end, unsigned int exclude_count, int* exclude_list, int* results)
+unsigned int RandIntsFromRange(unsigned int count, int start, int end, unsigned int exclude_count, int* exclude_list, int* results,
+	unsigned int seed = 0)
 {
 	// Validate inputs
 	if (results == nullptr || start > end) {
@@ -361,8 +363,8 @@ unsigned int RandIntsFromRange(unsigned int count, int start, int end, unsigned 
 	unsigned int max_possible = static_cast<unsigned int>(std::min(static_cast<long long>(count), available_size));
 
 	// Random number generator
-	std::random_device rd;
-	std::mt19937 gen(rd());
+	// Note: a non-zero seed gives a repeatable sequence (same inputs -> same results)
+	std::mt19937 gen(seed != 0 ? seed : std::random_device{}());
 	std::uniform_int_distribution<int> dist(start, end);
 
 	// Use set to track uniqueness
