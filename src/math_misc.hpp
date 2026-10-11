@@ -251,6 +251,43 @@ T CalcTriangleBoundRadius(Vec3<T> centroid, Vec3<T> a, Vec3<T> b, Vec3<T> c)
 	return sqrt(std::max(std::max(ra, rb), rc));
 }
 
+// Minimal enclosing sphere of a triangle
+// Right / obtuse (or degenerate) triangles: sphere on the longest edge as diameter
+// Acute triangles: circumsphere
+// Inputs:	a, b, c - triangle vertices
+// Return:	*center - sphere center
+//			T - sphere radius
+template <typename T>
+T CalcTriangleBoundSphere(Vec3<T> a, Vec3<T> b, Vec3<T> c, Vec3<T>* center)
+{
+	Vec3<T> u = b - a;
+	Vec3<T> v = c - a;
+	Vec3<T> w = c - b;
+
+	// An angle of 90 degrees or more means the opposite edge is the diameter
+	// Note: also covers collinear / coincident vertices, so the circumsphere below is never degenerate
+	if (u * v <= T(0))					// Angle at a - edge bc
+	{
+		*center = (b + c) / T(2);
+		return w.len() / T(2);
+	}
+	if ((-u) * w <= T(0))				// Angle at b - edge ca
+	{
+		*center = (c + a) / T(2);
+		return v.len() / T(2);
+	}
+	if (v * w <= T(0))					// Angle at c - edge ab
+	{
+		*center = (a + b) / T(2);
+		return u.len() / T(2);
+	}
+
+	// Acute - circumcenter: a + ((|u|^2 v - |v|^2 u) x (u x v)) / (2 |u x v|^2)
+	Vec3<T> n = u % v;
+	*center = a + ((v * u.lenSq() - u * v.lenSq()) % n) / (T(2) * n.lenSq());
+	return (*center - a).len();
+}
+
 template <typename T>
 Vec3<T> ProjectVertexPlane(Vec3<T> v, Vec3<T> a, Vec3<T> b, Vec3<T> c)
 {
