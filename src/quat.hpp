@@ -96,6 +96,7 @@ public:
 //#ifdef MAT_HPP_
     //Quat(const Mat3<T> &b);												// Constructor: Mat3
     //Quat(const Mat4<T> &b);												// Constructor: Mat4
+	static Quat<T> fromMat3(const Mat3<T>& m);								// Generate from a rotation matrix (must be orthonormal)
     Mat3<T> rotMat()const { return rotMat3(); }							    // Extract rotation matrix
     Mat3<T> rotMat3()const;													// Extract rotation matrix
     Mat4<T> rotMat4()const;													// Extract rotation matrix
@@ -417,6 +418,62 @@ Quat<T> Quat<T>::fromEuler(const Vec3<T>& v)
 		return Quat<T>(angle, v / angle);
 	else
 		return Quat<T>();
+}
+
+// Generate Quat from a rotation matrix (inverse of Mat3::rot(q))
+// Shepperd's method - branch on the largest diagonal term to avoid dividing by a small number
+// Note: m must be a pure rotation (orthonormal, det +1) - scale/shear is not handled
+template <typename T>
+Quat<T> Quat<T>::fromMat3(const Mat3<T>& m)
+{
+	// r(i, j) = row i, column j (Mat3 is column major: get(col, row))
+	const T r00 = m.get(0, 0), r01 = m.get(1, 0), r02 = m.get(2, 0);
+	const T r10 = m.get(0, 1), r11 = m.get(1, 1), r12 = m.get(2, 1);
+	const T r20 = m.get(0, 2), r21 = m.get(1, 2), r22 = m.get(2, 2);
+	const T trace = r00 + r11 + r22;
+	Quat<T> q;
+
+	if (trace > T(0))
+	{
+		T s = sqrt(trace + T(1)) * T(2);	// 4w
+		q.a = s / T(4);
+		q.b = (r21 - r12) / s;
+		q.c = (r02 - r20) / s;
+		q.d = (r10 - r01) / s;
+	}
+	else if (r00 > r11 && r00 > r22)
+	{
+		T s = sqrt(T(1) + r00 - r11 - r22) * T(2);	// 4x
+		q.a = (r21 - r12) / s;
+		q.b = s / T(4);
+		q.c = (r01 + r10) / s;
+		q.d = (r02 + r20) / s;
+	}
+	else if (r11 > r22)
+	{
+		T s = sqrt(T(1) + r11 - r00 - r22) * T(2);	// 4y
+		q.a = (r02 - r20) / s;
+		q.b = (r01 + r10) / s;
+		q.c = s / T(4);
+		q.d = (r12 + r21) / s;
+	}
+	else
+	{
+		T s = sqrt(T(1) + r22 - r00 - r11) * T(2);	// 4z
+		q.a = (r10 - r01) / s;
+		q.b = (r02 + r20) / s;
+		q.c = (r12 + r21) / s;
+		q.d = s / T(4);
+	}
+
+	// Guard against drift from a slightly non-orthonormal input
+	T n = q.norm();
+	if (n != T(0))
+	{
+		q.a /= n; q.b /= n; q.c /= n; q.d /= n;
+	}
+
+	return q;
 }
 
 //#endif
