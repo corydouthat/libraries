@@ -1,8 +1,9 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.19)
 
 project(libraries LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 
+# Fully guard by placing include directory inside guard
 if (NOT TARGET libraries)
 	add_library(libraries INTERFACE
 		#including files here will force Visual Studio to show library
@@ -18,6 +19,6 @@ if (NOT TARGET libraries)
 		src/math_misc.hpp
 		src/file_help.hpp
 	 )
-endif()
 
-target_include_directories(libraries INTERFACE src)
+	target_include_directories(libraries INTERFACE src)
+endif()

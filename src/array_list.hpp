@@ -197,9 +197,6 @@ bool ArrayList<T>::updateCount(unsigned int new_count)
 template <typename T>
 bool ArrayList<T>::allocate(unsigned int new_size, bool downsize)
 {
-	// Note: be very careful with classes, structs, or pointers
-	//	     the copy / delete operations below could cause pointer double-deletion, etc.
-
 	if (new_size <= size && !downsize)
 		return false;
 	else
@@ -225,21 +222,26 @@ bool ArrayList<T>::allocate(unsigned int new_size, bool downsize)
 				new_size += 10000 - remainder;
 		}
 
-		// Copy data to new memory location
-		if (count > 0)
+		// Move data to new memory location
+		T* temp = data;
+		data = static_cast<T*>(::operator new(new_size * sizeof(T)));
+
+		if constexpr (std::is_trivially_copyable_v<T>)
 		{
-			T* temp = data;
-			// Manually allocate memory to avoid creating object instances
-			data = static_cast<T*>(::operator new(new_size * sizeof(T)));
-
-			// Copy data in used memory (up to count)
-			memcpy(data, temp, count * sizeof(T));
-
-			// Manually delete (does not call destructors)
-			::operator delete(temp);
+			if (count > 0)
+				memcpy(data, temp, count * sizeof(T));
 		}
 		else
-			data = static_cast<T*>(::operator new(new_size * sizeof(T)));
+		{
+			for (unsigned int i = 0; i < count; i++)
+			{
+				new (&data[i]) T(std::move(temp[i]));
+				temp[i].~T();
+			}
+		}
+
+		if (temp)
+			::operator delete(temp);
 
 		size = new_size;
 
@@ -275,10 +277,6 @@ bool ArrayList<T>::set(unsigned int index, T&& item) noexcept
 		return false;
 	else
 	{
-		//// TODO: is_trivially_copyable always false for move operation functions?
-		//if (!std::is_trivially_copyable<T>::value)
-		//	data[index].~T();
-
 		data[index] = std::move(item);
 
 		return true;
