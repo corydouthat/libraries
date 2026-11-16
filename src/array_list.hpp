@@ -55,6 +55,8 @@ public:
 
 	bool set(unsigned int index, const T& item) requires Copyable<T>;	// Set value at index
 	bool set(unsigned int index, T&& item) noexcept;			// Set value at index (move operation)
+	bool setGrow(unsigned int index, const T& item) requires Copyable<T>;	// Set value at index
+	bool setGrow(unsigned int index, T&& item) noexcept;		// Set value at index (move operation)
 	template <typename... Args>
 	bool setEmplace(unsigned int index, Args&&... args);		// Emplace object at index
 	bool setAllInt(int item);									// Set value of all
@@ -281,6 +283,22 @@ bool ArrayList<T>::set(unsigned int index, T&& item) noexcept
 
 		return true;
 	}
+}
+
+// Set value at index
+template<typename T>
+bool ArrayList<T>::setGrow(unsigned int index, const T& item) requires Copyable<T>
+{
+	updateCount(index + 1);
+	return set(index, item);
+}
+
+// Set value at index (move operation)
+template<typename T>
+bool ArrayList<T>::setGrow(unsigned int index, T&& item) noexcept
+{
+	updateCount(index + 1);
+	return set(index, item);
 }
 
 // Emplace object at index (overwriting previous)
