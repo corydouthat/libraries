@@ -37,12 +37,12 @@ public:
 	Vec2() : x(0), y(0) {}													// Constructor: initialize all to zeros
 	template <typename sT>
 	Vec2(const sT& bx, const sT& by) : x((T)bx), y((T)by) {}					// Constructor: x, y
-	Vec2(const Vec2<T>& b) { memcpy(this, &b, sizeof(*this)); }				// Constructor: copy
+	Vec2(const Vec2<T>& b) = default;										// Constructor: copy (default, keeps Vec2 trivially copyable)
 	Vec2(const Vec3<T>& b) { memcpy(this, &b, sizeof(*this)); }				// Constructor: copy (downsize)
 	template <typename T2>
 	Vec2(const Vec2<T2>& b) { *this = b; }									// Constructor: copy (conversion)
 	// Basic Operators
-	const Vec2<T>& operator =(const Vec2<T>& b);							// Operator = (assignment)
+	Vec2<T>& operator =(const Vec2<T>& b) = default;						// Operator = (assignment, default)
 	template <typename T2>
 	const Vec2<T>& operator =(const Vec2<T2>& b);							// Operator = (assignment/conversion)
 	T& operator [](unsigned int i) { return v[i]; }							// Operator []
@@ -238,14 +238,6 @@ Vec4<T>::Vec4(const Vec3<T>& b, const T& s)
 // BASIC OPERATORS
 // *****************************************************************************************************************************
 
-// Vec2
-// Operator =
-template <typename T>
-const Vec2<T>& Vec2<T>::operator =(const Vec2<T>& b)
-{
-	x = b.x;	y = b.y;
-	return *this;
-}
 // Vec2
 // Operator = (assignment/conversion)
 template <typename T>
