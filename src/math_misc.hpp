@@ -142,7 +142,7 @@ bool SolveCramer(const T *A_mat,const T *b_vec,unsigned int n,T *x_vec)
         memcpy(&Ai[i * n],&A_mat[i * n],n * sizeof(T));
     }
 
-	delete Ai;
+	delete[] Ai;
     return true;
 }
 
