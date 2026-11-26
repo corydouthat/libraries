@@ -1627,7 +1627,7 @@ Mat3<T> Mat3<T>::transl(const Vec3<T>& t)
 // Mat4
 // Static 3D Translation Matrix Generator: 4D Vector (4th element usually 1)
 template <typename T>
-static Mat4<T> Mat4<T>::transl(const Vec4<T>& t)
+Mat4<T> Mat4<T>::transl(const Vec4<T>& t)
 {
 	Mat4<T> temp;	// Identity matrix
 	temp.v[12] = t.x;

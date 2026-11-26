@@ -191,6 +191,21 @@ bool ArrayList<T>::updateCount(unsigned int new_count)
 
 		return true;
 	}
+	else if (new_count < count)
+	{
+		// Call destructors for removed items and zero their memory (same as clear()); allocation is kept
+		if (!std::is_trivially_copyable<T>::value)
+		{
+			for (unsigned int i = new_count; i < count; i++)
+				data[i].~T();
+		}
+
+		memset(static_cast<void*>(&data[new_count]), 0, (count - new_count) * sizeof(T));
+
+		count = new_count;
+
+		return true;
+	}
 	else
 		return false;
 }
