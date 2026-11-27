@@ -12,7 +12,14 @@
 
 #define _USE_MATH_DEFINES	// For PI definition
 #include <cmath>
+#include <math.h>			// The float overloads (sqrt(float), cos(float) ...) at global scope - see note
 #include <cstring>
+
+// Note: an unqualified sqrt / cos / atan2 ... of a float picks its overload from what was declared before the call.
+//		 MSVC and libc++ (Android) declare the float ones at global scope with <cmath>; GCC's libstdc++ only with <math.h>,
+//		 so on Linux the same inline code did double math in one program and float math in another that happened to
+//		 include <math.h> (stb_easy_font does) before it - a different simulation from the same commands. <math.h> here,
+//		 before any code that uses these, gives every program and platform the same (float) overloads.
 
 template <typename T>
 class Vec2;
